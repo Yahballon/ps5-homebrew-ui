@@ -45,3 +45,19 @@ The library is currently linked statically against the source-version-matched
 package. This validates archive packaging and symbol resolution; it is **not**
 a promise of a stable binary ABI across future SDK versions. Real console
 testing and lifecycle/stress measurements are separate milestones.
+
+## Verified build receipt (2026-10-24)
+
+The full PS5 cross-build and archive-only link passed on
+[GitHub Actions run 40096468528](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40096468528)
+at source commit `14d02c4c1e9ab852025a22256375f87fa54badd4`.
+
+- CI compiled only `examples/sdk-consumer/main.cpp` and the two
+  `src/runtime/` C bootstrap sources for the independent app.
+- All non-runtime UI symbols resolved from `dist/sdk/lib/libps5hui.a`.
+- CI validated the `PPSA99863.zip` native app folder, signed
+  `eboot.bin`, runtime, and required ZIP permissions.
+- [Download archive-only consumer installer artifact](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40096468528/artifacts/12560763851).
+
+This CI result is **not** a PS5 console run. Hardware verification remains
+required, including GPU cache-clear/reupload and fresh file read behavior.

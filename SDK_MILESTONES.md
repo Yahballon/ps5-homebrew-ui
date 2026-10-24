@@ -149,8 +149,11 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
 - [x] Add soak telemetry (CPU/GPU *cache* peaks and slow-frame count),
       throttle long-run progress logging to once per 20 waves and add
       explicit shutdown-before/join-after log lines.
-- [ ] Full GitHub Actions lint/unit/integration and PS5 archive-only
-      compiler/linker/ZIP verification for v0.6.0.
+- [x] GitHub Actions run 40105545011 on commit a7a86470fc4becd41690d672539fb30e8b653cb2:
+      lint, GoogleTest, host integration, normal PS5 app, static SDK archive,
+      previous SDK Lab, archive-only PPSA99863 v0.6.0 PS5 cross-build/link,
+      source whitelist and ZIP verification all PASS.
+      v0.6.0 Consumer install artifact: 12564004961.
 - [ ] Real PS5 200/200 PASS with zero decode and GPU errors, record
       elapsed/slow-frame/peak-cache telemetry. This is a bounded stress
       test, not proof of process-heap or VRAM leak freedom.

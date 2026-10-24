@@ -1,6 +1,6 @@
 # UI SDK Milestones
 
-Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-20261024`.
+Last updated: 2026-10-25. Development branch: `feature/ui-sdk-foundation-20261024`.
 
 ## Baseline
 - 21 designs, 30 themes, 99 UI components in the OpenGL showcase.
@@ -204,9 +204,11 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
 - [x] Document external FTP path
       `/mnt/sandbox/PPSA99863_000/download0/hui/dev/app.log` and that
       the console sandbox is available while the app is running.
-- [ ] User retrieves console log for v0.6.1; confirm
-      `shutdown worker joined=1` from runtime logs. Avoid claiming the
-      shutdown worker has been verified before receiving the receipt.
+- [x] The former sandbox app.log was not retrievable by the user;
+      the replacement v0.6.2 /data exporter was tested on 2026-10-25.
+      User supplied the on-screen JOINED: YES state and shutdown.txt
+      content explicitly confirming worker.joined=1.
+      This verifies the *v0.6.2* path, not the old v0.6.1 sandbox path.
 
 ## v0.6.2: Visible shutdown receipt and file export (2026-10-24)
 
@@ -229,10 +231,24 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       normal PS5 title, reusable SDK archive, SDK Lab and archive-only
       PPSA99863 v0.6.2 compiler/linker/installer validation all PASS.
       Consumer artifact: 12577500627 (PPSA99863.zip).
-- [ ] On-console v0.6.2 test: press Options, photograph actual worker
-      join and export status; if saved, retrieve shutdown.txt from the
-      exact path the app displays. File availability remains unverified
-      until that console test succeeds.
+- [x] Real PS5 v0.6.2 hardware validation (user screenshot and actual
+      shutdown.txt content, 2026-10-25): Options receipt screen displayed
+      WORKER JOINED: YES, queued cancelled 0, processed jobs 1608;
+      the new atomic exporter reported SAVED to the confirmed writable
+      /data/PS5UI_SDK_Consumer/logs/shutdown.txt. User provided the
+      contents showing worker.joined=1 and matching counters.
+- [x] R2 200/200 PASS on PS5, 1600 successful uploads, 0 PNG decode
+      errors and 0 GPU upload errors. Corrected peak CPU/GPU cache
+      values are both 8192 KiB. Both CPU and GPU caches currently hold
+      8 images/textures (8192 KiB each). Telemetry screen shows 0 frames
+      >33 ms during the stress run, worst test frame 17.72 ms, rolling
+      average ~16.66-16.68 ms, p99 17.15-18.12 ms.
+- [x] Observed 2 input-focus interruptions and 2 returns on PS5;
+      actual breadcrumb file contains both transition pairs. This
+      validates app-level focus interception/restoration, NOT OS suspend.
+- [ ] Additional hardware validation: exit-to-shell behavior after X,
+      multi-hour memory soak, real console sleep/wake and lost EGL-context
+      recovery. Screenshot plus receipt do not establish these.
 - [ ] Actual OS suspend/resume, automatic EGL reconstruction and
       native crash dump/symbolication remain outstanding.
 
@@ -251,5 +267,5 @@ Read `docs/SDK.md`, `docs/ADOPTING.md`, `docs/PERFORMANCE.md`,
 `src/sdk/*.hpp`, and `.github/workflows/tooling.yml` first.
 Do not replace already-working components. Keep `main` untouched until lint,
 host unit tests and PS5 cross-build pass. Never claim a hardware test succeeded
-without console logs. Preserve GPL-3.0-or-later and the three-line source header.
+without user-provided on-console evidence (screenshots or logs). Preserve GPL-3.0-or-later and the three-line source header.
 Update this file after every change.

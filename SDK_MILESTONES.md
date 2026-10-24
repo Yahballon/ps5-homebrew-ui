@@ -88,8 +88,10 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       cancellation, lifecycle transitions and breadcrumb ring wraparound.
 - [x] Migrate archive-only PPSA99863 consumer to the reusable worker and
       diagnostics; bump its app version to v0.4.0.
-- [ ] Confirm CI checks (lint, host unit/integration, archive-only native
-      link and PPSA99863 installer).
+- [x] CI run 40098174696 at commit c066c3107f513f7ab48c1987394b0c2de48218e8:
+      lint, host unit/integration tests, normal app, SDK archive, previous SDK
+      Lab and archive-only PPSA99863 v0.4.0 cross-build/link and ZIP checks PASS.
+      Installable SDK Consumer artifact: 12561971440 (PPSA99863.zip).
 - [ ] Verify v0.4.0 on PS5 hardware, especially cache reloading,
       focus-interception counters, worker job count and clean exit.
 - [ ] Add true OS suspend/resume hooks, re-create lost EGL resources,

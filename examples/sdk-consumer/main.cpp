@@ -12,6 +12,7 @@
 #include "sdk/worker_thread.hpp"
 #include "sdk/diagnostics.hpp"
 #include "sdk/diagnostic_export.hpp"
+#include "sdk/context_restart.hpp"
 #include "sdk/navigation.hpp"
 #include "sdk/read_image_file.hpp"
 #include "sdk/texture_cache.hpp"
@@ -52,6 +53,14 @@ struct ShutdownReceipt
     std::size_t cancelled = 0;
     std::uint64_t processed = 0;
     std::string path;
+};
+
+struct RestartStatus
+{
+    std::uint32_t attempts = 0;
+    std::uint32_t successful = 0;
+    std::uint64_t last_duration_us = 0;
+    hui::sdk::ContextRestartStage last = hui::sdk::ContextRestartStage::succeeded;
 };
 
 struct Face
@@ -100,8 +109,8 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
                const hui::sdk::ImageCache &cpu, const hui::sdk::TextureCache &gpu,
                const hui::sdk::FrameMonitor &frames, bool worker_running,
                const hui::sdk::LifecycleMonitor &lifecycle, const hui::sdk::ImageStress &stress,
-               const hui::sdk::SoakMonitor &soak, const ShutdownReceipt &receipt,
-               std::uint64_t processed_jobs, std::size_t selected, std::uint64_t frame_count)
+               const hui::sdk::SoakMonitor &soak, const RestartStatus &restart,
+               const ShutdownReceipt &receipt, std::uint64_t processed_jobs, std::size_t selected, std::uint64_t frame_count)
 {
     const Color foreground = Color::rgb(0xffffff);
     const Color dim = Color::rgb(0x9fb1c6);
@@ -112,7 +121,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
     draw.rounded_rect({72, 53, 1776, 140}, 24, card);
     draw.rounded_rect({72, 53, 13, 140}, 6, mint);
     label(draw, bold, "PS5 UI SDK  /  ARCHIVE CONSUMER", 110, 117, 42, foreground);
-    label(draw, regular, "by YAHBALLON  |  v0.6.2  |  libps5hui.a linked", 114, 161, 23, dim);
+    label(draw, regular, "by YAHBALLON  |  v0.7.0  |  libps5hui.a linked", 114, 161, 23, dim);
 
     const auto *route = navigation.current();
     const std::string current = route ? route->name : "home";
@@ -193,6 +202,15 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
         const auto perf = frames.summary();
         draw.rounded_rect({156, 294, 1614, 594}, 32, card);
         label(draw, bold, "SDK LINK & FRAME TELEMETRY", 210, 373, 42, foreground);
+        char recovery_text[160];
+        std::snprintf(recovery_text, sizeof(recovery_text),
+                      "GL restart: %u/%u OK  last=%s  %.1f ms",
+                      restart.successful, restart.attempts,
+                      restart.attempts == 0 ? "NOT TESTED" :
+                      hui::sdk::context_restart_stage_name(restart.last),
+                      static_cast<double>(restart.last_duration_us) / 1000.0);
+        label(draw, regular, recovery_text, 815, 295, 22,
+              restart.successful == restart.attempts ? mint : Color::rgb(0xff7e8b));
         char number[160];
         std::snprintf(number, sizeof(number), "Frames:  %llu",
                       static_cast<unsigned long long>(frame_count));
@@ -243,7 +261,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
     else
         label(draw, regular,
               "X  OPEN / NEXT    O  BACK    SQUARE  RELOAD    TRIANGLE  CLEAR GPU    "
-              "R1  20    R2  200    OPTIONS  SHUTDOWN RECEIPT",
+              "L1  GL RESTART    R1  20    R2  200    OPTIONS  RECEIPT",
               106, 1008, 21, dim);
 }
 
@@ -252,7 +270,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
 int main()
 {
     using namespace hui;
-    sys::log("[HUI ARCHIVE CONSUMER] start v0.6.2 libps5hui.a");
+    sys::log("[HUI ARCHIVE CONSUMER] start v0.7.0 libps5hui.a");
     ps5::Display display;
     if (!display.open(1920, 1080))
     {
@@ -293,6 +311,7 @@ int main()
     sdk::ImageStress stress;
     sdk::SoakMonitor soak;
     ShutdownReceipt receipt;
+    RestartStatus restart;
     gfx::DrawList frame;
     std::uint64_t frame_count = 0;
     std::size_t selected = 0;
@@ -365,7 +384,7 @@ int main()
 
                 // Export once after the worker joins; never write from the
                 // 60 FPS frame loop or pretend a failed export succeeded.
-                std::string report = "PS5 UI SDK Consumer v0.6.2 - shutdown receipt\n";
+                std::string report = "PS5 UI SDK Consumer v0.7.0 - shutdown receipt\n";
                 char line[256];
                 std::snprintf(
                     line, sizeof(line),
@@ -388,6 +407,13 @@ int main()
                               "peak_gpu_kib=%zu\n",
                               cpu.used_bytes() / 1024, gpu.used_bytes() / 1024,
                               soak.peak_cpu_bytes() / 1024, soak.peak_gpu_bytes() / 1024);
+                report += line;
+                std::snprintf(line, sizeof(line),
+                              "gl.restart_attempts=%u\ngl.restart_success=%u\ngl.restart_last=%s\ngl.restart_duration_us=%llu\n",
+                              restart.attempts, restart.successful,
+                              restart.attempts == 0 ? "not_tested" :
+                                  sdk::context_restart_stage_name(restart.last),
+                              static_cast<unsigned long long>(restart.last_duration_us));
                 report += line;
                 for (std::size_t i = 0; i < breadcrumbs.size(); ++i)
                 {
@@ -435,6 +461,77 @@ int main()
                     selected = (selected + 4) % kTiles;
                 if (input.nav == Direction::up)
                     selected = (selected + kTiles - 4) % kTiles;
+            }
+            if (input.is_pressed(Action::page_prev))
+            {
+                // A deliberate, orderly GL/EGL teardown while the old
+                // context is healthy; NOT automatic context-loss recovery.
+                if (stress.running())
+                {
+                    stress.cancel();
+                    soak.finish(static_cast<std::uint64_t>(now));
+                }
+                ++restart.attempts;
+                const std::int64_t begin = sys::monotonic_us();
+                breadcrumbs.record(static_cast<std::uint64_t>(now), "gl",
+                                   "controlled context restart requested");
+                const auto outcome = sdk::restart_context(
+                    [&]()
+                    {
+                        images.reset(); // drop stale handles before releasing GL
+                        gpu.clear();    // GL context is still valid here
+                        regular.texture = 0;
+                        bold.texture = 0;
+                    },
+                    [&]() { renderer.release(); },
+                    [&]() { display.close(); },
+                    [&]() { return display.open(1920, 1080); },
+                    [&]() { return renderer.init(); },
+                    [&]()
+                    {
+                        return load_face(renderer, regular, kFontPath) &&
+                               load_face(renderer, bold, kFontBold);
+                    },
+                    [&]() { load_covers(); });
+                const std::int64_t done = sys::monotonic_us();
+                restart.last_duration_us =
+                    static_cast<std::uint64_t>(done >= begin ? done - begin : 0);
+                restart.last = outcome.stage;
+                if (outcome.ok())
+                {
+                    ++restart.successful;
+                    previous = done;
+                    breadcrumbs.record(static_cast<std::uint64_t>(done), "gl",
+                                       "controlled context restart succeeded");
+                    sys::log("[HUI ARCHIVE CONSUMER] GL context restart PASS %u/%u in %llu us",
+                             restart.successful, restart.attempts,
+                             static_cast<unsigned long long>(restart.last_duration_us));
+                }
+                else
+                {
+                    // No current display to render an error screen. Persist
+                    // one controlled failure receipt before parking.
+                    breadcrumbs.record(static_cast<std::uint64_t>(done), "gl",
+                                       sdk::context_restart_stage_name(outcome.stage));
+                    images.cancel_all();
+                    const auto stopped = worker.stop();
+                    char failure[512];
+                    std::snprintf(failure, sizeof(failure),
+                                  "PS5 UI SDK Consumer v0.7.0 GL restart failure\n"
+                                  "stage=%s\nworker.joined=%d\nattempts=%u\nsuccess=%u\n",
+                                  sdk::context_restart_stage_name(outcome.stage),
+                                  stopped.joined ? 1 : 0,
+                                  restart.attempts, restart.successful);
+                    const auto saved = sdk::export_diagnostics(
+                        failure,
+                        [](const std::string &dir) { return save::ensure_directory(dir); },
+                        [](const std::string &file, std::string_view data)
+                        { return save::write_atomic(file, data); });
+                    sys::log("[HUI ARCHIVE CONSUMER] GL restart FAIL stage=%s saved=%d",
+                             sdk::context_restart_stage_name(outcome.stage),
+                             saved.saved ? 1 : 0);
+                    sys::park();
+                }
             }
             if (input.is_pressed(Action::north))
             {
@@ -512,7 +609,7 @@ int main()
             }
         }
         draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok, lifecycle,
-                  stress, soak, receipt, worker.processed_jobs(), selected, frame_count);
+                  stress, soak, restart, receipt, worker.processed_jobs(), selected, frame_count);
         renderer.begin();
         renderer.draw(frame);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

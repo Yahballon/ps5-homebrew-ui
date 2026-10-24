@@ -1,0 +1,33 @@
+# Temporary clang-format export for v0.7.0; removed after applying results.
+name: SDK v070 format export
+on:
+  push:
+    branches: ['feature/ui-sdk-*']
+permissions:
+  contents: read
+jobs:
+  formatter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install formatter
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y clang-format-18
+      - name: Format changed C++ sources
+        run: |
+          clang-format-18 -i src/sdk/context_restart.hpp src/sdk/context_restart.cpp src/sdk/sdk.hpp tests/unit/sdk_context_restart_test.cpp examples/sdk-consumer/main.cpp
+      - name: Export formatted source bytes
+        run: |
+          python3 - <<'PY'
+          import base64, subprocess
+          from pathlib import Path
+          changed = subprocess.check_output(['git','diff','--name-only'], text=True).splitlines()
+          for filename in changed:
+              contents = base64.b64encode(Path(filename).read_bytes()).decode('ascii')
+              for i,offset in enumerate(range(0,len(contents),1500)):
+                  print(f'HUIFMT|{filename}|{i}|{contents[offset:offset+1500]}',flush=True)
+              print(f'HUIEND|{filename}|{len(contents)}',flush=True)
+          print(f'HUIFILES={len(changed)}')
+          PY

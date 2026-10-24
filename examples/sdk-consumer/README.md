@@ -226,3 +226,18 @@ Open the gallery, press R2 and let 200/200 finish. Use X to open
 telemetry, confirm upload count **1600**, both error counts zero, and note
 slow-frame count, worst frame time, and CPU/GPU cache peaks. Screenshots
 plus runtime logs are useful for tracking longer-term reliability.
+
+## v0.6.0 CI receipt — 2026-10-24
+
+[GitHub Actions run 40105545011](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40105545011)
+passed lint, GoogleTest including `sdk/soak_monitor.hpp`, host integration
+tests, native PS5 cross-build, static SDK archive creation, and the
+archive-only consumer compile/link/installer ZIP verification.
+
+- **Consumer installer:** [PPSA99863.zip — artifact 12564004961](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40105545011/artifacts/12564004961)
+- Build commit: `a7a86470fc4becd41690d672539fb30e8b653cb2`
+- **Hardware state:** R2/200-wave testing is pending; do not claim a PS5
+  200/200 PASS until an actual console screenshot or log confirms it.
+- **Expected final state:** `STRESS 200/200 PASS`, uploads 1600,
+  decode errors 0, GPU errors 0 and eight images READY. The long-run
+  monitor reports observed cache peaks and slow-frame counts.

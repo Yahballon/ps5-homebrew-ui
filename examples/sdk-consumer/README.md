@@ -342,3 +342,32 @@ using a separate klog receiver.
 **Logging performance note:** the current native startup shim explicitly
 sets unbuffered stdout/stderr. This produces a crash-resistant log receipt
 but can stall on slow filesystems, so don't add per-frame file logging.
+
+## v0.6.2: Diagnose ohne unsichtbare Sandbox-Dateien
+
+The previous `runtime_shims.c` startup code attempted to redirect stdout to
+`/download0/hui/dev/app.log`, but that location was **not visible to the
+hardware tester**. It is not a reliable externally accessible log folder,
+and opening it was never checked. Do not assume it exists.
+
+The **v0.6.2 consumer installer** exposes a new, explicit shutdown receipt:
+
+1. Open the SDK Consumer as usual and run any test.
+2. Press **Options**. This cancels pending image work, calls the worker's
+   `stop()`/`pthread_join`, and creates a bounded shutdown report.
+3. Instead of instantly exiting, the app shows **WORKER SHUTDOWN RECEIPT**
+   with `WORKER JOINED: YES/NO`, cancelled-job count, processed-job count
+   and a verified file-export status. Photograph this screen.
+4. If the app says `DIAGNOSTIC FILE: SAVED`, use the **exact path displayed**
+   to retrieve the `shutdown.txt` receipt. The app tries these folders:
+   `/data/PS5UI_SDK_Consumer/logs/`, then
+   `/mnt/usb0/PS5UI_SDK_Consumer/logs/` and only then
+   `/download0/hui/dev/`.
+   If all locations are inaccessible, the app clearly says
+   `NO WRITABLE LOCATION`; the on-screen worker report still works.
+5. Press **X** on this receipt screen to close the title cleanly.
+
+The file export is one atomic write at shutdown; it does not introduce
+per-frame disk logging. It contains the worker join status, cached-image
+counters, stress-test result and recent lifecycle/cache breadcrumbs.
+No hardware test for v0.6.2 has been claimed yet.

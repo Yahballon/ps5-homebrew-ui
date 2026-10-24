@@ -154,9 +154,19 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       previous SDK Lab, archive-only PPSA99863 v0.6.0 PS5 cross-build/link,
       source whitelist and ZIP verification all PASS.
       v0.6.0 Consumer install artifact: 12564004961.
-- [ ] Real PS5 200/200 PASS with zero decode and GPU errors, record
-      elapsed/slow-frame/peak-cache telemetry. This is a bounded stress
-      test, not proof of process-heap or VRAM leak freedom.
+- [x] Real PS5 PPSA99863 v0.6.0 user-reported 200-round R2 stress PASS
+      (screenshot, 2026-10-24): 200/200 PASS, 1600 uploads, 0 decode errors,
+      0 GPU errors, 0 frames >33.334 ms during tracked test, 1768 background
+      jobs, worker RUNNING. Screen captured at frame 3199 with average 16.68 ms,
+      P99 17.18 ms, rolling max 17.22 ms; soak monitor worst 17.65 ms.
+      Current CPU/GPU cache 8192 KiB / 8 entries each.
+- [ ] Correct soak peak sampling on its final frame: reported CPU/GPU peaks
+      7168/7168 KiB are lower than current cache 8192/8192 KiB because
+      finish() runs in the update stage, before the final frame's observe().
+      Monitor should record the final ready state before ending a test, with
+      regression tests. Treat the peak figure as a measurement artifact.
+- [ ] Further memory/lifecycle proof still needed: a 200-wave cache test
+      is not a process heap or system VRAM leak test.
 - [ ] OS-level suspend/resume and lost-EGL restoration, process memory
       instrumentation, long-duration soak and native crash dumps remain open.
 

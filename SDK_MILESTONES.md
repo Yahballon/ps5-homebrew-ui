@@ -180,8 +180,11 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       join; include controlled shutdown and EGL swap failure logs.
 - [x] Add host regression coverage for final-sample cache peaks and
       shutdown reports; bump PPSA99863 content version to v0.6.1.
-- [ ] Verify complete CI lint/unit/integration, archive-only PS5 native link
-      and the PPSA99863 v0.6.1 installer ZIP.
+- [x] CI run 40106797524 on commit 7dd9c5e88e25310ab67be4902447ebf6e9d63e07:
+      clang-format lint, GoogleTest, host integration tests, native PS5
+      showcase, reusable SDK archive, previous SDK Lab and archive-only
+      PPSA99863 v0.6.1 link/ZIP checks all PASS.
+      Consumer install artifact: 12564858169.
 - [ ] Hardware retest: R2 200/200 PASS, 1600 uploads, errors 0,
       **peak CPU/GPU 8192 KiB** and safe Options shutdown.
 - [ ] Real OS suspend/resume, lost EGL context restore and native crash

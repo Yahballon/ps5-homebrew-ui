@@ -158,3 +158,19 @@ This SDK consumer version adds:
 - Read `SDK_MILESTONES.md` before claiming v0.5.0 ready: the previous
   hardware test proved v0.4.0 only. It also verified repeated manual
   Square and Triangle tests by user report (without logs).
+
+## v0.5.0 CI validation (2026-10-24)
+
+All checks passed on [Actions run 40100047639](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40100047639)
+at commit `c1865f0a5192861de686fcf3131ceca6bc46a6d3`:
+clang-format/lint, host GoogleTest suite including stale-job reset and
+bounded stress state machine, host integration tests, PS5 cross-compiler/linker,
+archive-only source whitelist, consumer installer ZIP permissions.
+
+**Install PPSA99863 v0.5.0:**
+[SDK Consumer ZIP artifact 12562437870](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40100047639/artifacts/12562437870).
+
+The **20-round R1 stress mode is not yet console-tested**. A PASS must display
+20/20, eight READY covers, zero decode/GPU errors, and stable frame times.
+The completed CI run does not establish real-PS5 performance or long-duration
+storage/worker reliability.

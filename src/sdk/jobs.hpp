@@ -67,12 +67,12 @@ class JobQueue
 
     using Work = std::function<void(Context &)>;
 
-    Handle submit(Work work)
+    Handle submit(Work work, bool report_completion = true)
     {
         auto state = std::make_shared<Shared>();
         Handle handle(state);
         std::lock_guard<std::mutex> lock(mutex_);
-        pending_.push_back({std::move(work), std::move(state)});
+        pending_.push_back({std::move(work), std::move(state), report_completion});
         return handle;
     }
 
@@ -95,6 +95,7 @@ class JobQueue
                 context.set_progress(1.0f);
         }
         job.state->finished.store(true);
+        if (job.report_completion)
         {
             std::lock_guard<std::mutex> lock(mutex_);
             completed_.emplace_back(job.state);
@@ -134,6 +135,7 @@ class JobQueue
     {
         Work work;
         std::shared_ptr<Shared> state;
+        bool report_completion = true;
     };
 
     mutable std::mutex mutex_;

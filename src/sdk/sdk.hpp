@@ -5,6 +5,7 @@
 #pragma once
 
 #include "sdk/assets.hpp"
+#include "sdk/async_images.hpp"
 #include "sdk/bmp.hpp"
 #include "sdk/diagnostics.hpp"
 #include "sdk/i18n.hpp"

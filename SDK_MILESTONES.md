@@ -20,11 +20,13 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       encoded-size/pixel-count caps, plus a tiny PNG regression fixture.
 - [x] Track renderer-created textures and allow explicit image texture deletion.
 - [x] Add build-artifact packaging and image-cache regression tests.
+- [x] Add AsyncImages pipeline (bounded read callback, worker decode, CPU cache,
+      capped GPU uploads per UI frame, cancel/status, LRU eviction recovery).
 - [ ] GitHub Actions lint/unit/full PS5 app build passes on this branch.
 - [ ] Boot and test an SDK consumer on a modified PS5.
 
 ## Production blockers, in priority order
-- [ ] WebP decode and streaming/prefetch pipeline (PNG/JPEG/BMP/GIF/TGA/PNM + explicit GPU LRU implemented).
+- [ ] WebP decode, priority queue and concrete PS5 worker ownership (bounded async image pipeline implemented).
 - [ ] OS thread management and graceful shutdown, completion/error result API.
 - [ ] Full Unicode shaping, bidirectional text, locale formatting and accessibility.
 - [ ] Native crash dump/symbolication and EGL/lifecycle recovery.

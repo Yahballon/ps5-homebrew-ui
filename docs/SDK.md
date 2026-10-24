@@ -28,6 +28,7 @@ replacement for the loader, and does not contain a second copy of the entry poin
 | `sdk/assets.hpp` | Validated decoded RGBA images and memory-bounded CPU LRU cache |
 | `sdk/bmp.hpp` | Lightweight strict uncompressed 24/32-bit BMP decoder |
 | `sdk/image_decode.hpp` | Bounded PNG/JPEG/BMP/GIF/TGA/PNM decoder via vendored stb_image |
+| `sdk/async_images.hpp` | Nonblocking file-reader/decode/CPU-cache/GPU-upload cover pipeline |
 | `sdk/texture_cache.hpp` | GPU budget/LRU cache via explicit render-thread callbacks |
 | `sdk/i18n.hpp` | Translatable keys, fallback catalog and named substitutions |
 | `sdk/paths.hpp` | Install/save/data/USB roots and validation of relative paths |
@@ -65,6 +66,36 @@ with deliberate stack sizes and scheduling. A token's `finished()` means work re
 not that a download succeeded. App callbacks publish results to the UI thread.
 Cancelling a running job is cooperative. Join worker threads before destroying the queue.
 
+### Putting the decoder, worker queue, and GPU upload together
+
+```cpp
+hui::sdk::AsyncImages covers(
+    jobs, cpu_cache, texture_cache,
+    [](const std::string &path, std::size_t max_bytes) {
+        // Run on the app's worker. Supply your own bounded read implementation
+        // for /data, /download0 and USB. It must never return > max_bytes.
+        return read_image_file(path, max_bytes);
+    });
+
+covers.request("DOOM64", "/data/N64XY/covers/DOOM64.png");
+// One of the application's OS worker threads invokes jobs.process_one().
+// Every render frame, on the UI thread:
+covers.pump(2); // upload at most two decoded covers
+const std::uint32_t texture = covers.texture("DOOM64");
+if (texture != 0) {
+    // draw the cover via gfx::DrawList::image(...);
+}
+```
+
+The pipeline does not create worker threads or provide the file-reader
+implementation; those are application responsibilities. It never calls OpenGL
+in the worker. It uses the queue's *unreported completion* mode, so its many
+jobs do not fill the shared completion-deque; other applications can still use
+`JobQueue::take_completed()` for their own jobs. Use `cancel_all()` before
+shutting down the workers, then join them before destructing the queue. The
+GPU cache may evict textures once its budget is reached, so draw only handles
+retrieved **this frame**, not stale stored texture IDs.
+
 ### Runtime storage
 
 `StoragePaths` defaults to `/app0`, `/download0`, `/data`, and `/mnt/usb0`.
@@ -75,7 +106,7 @@ also be considered by the file-accessing application.
 
 ## Remaining v1.0 blockers — do not misrepresent as implemented
 
-- **WebP** decoding and a complete streaming upload/prefetch pipeline. The
+- **WebP** decoding, priority scheduling and fully integrated platform worker threads. The
   new `decode_image` handles PNG/JPEG/BMP/GIF/TGA/PNM through stb_image with
   configurable input-size and decoded-pixel limits (GIF: first frame only).
   The lightweight `decode_bmp` handles **uncompressed 24/32-bit BMP**.
@@ -95,7 +126,7 @@ also be considered by the file-accessing application.
   and optional renderer ports.
 
 The portable service APIs have unit tests in `tests/unit/sdk_test.cpp`,
-`tests/unit/sdk_images_test.cpp`, and `tests/unit/sdk_decode_test.cpp`. Hardware
+`tests/unit/sdk_images_test.cpp`, `tests/unit/sdk_decode_test.cpp`, and `tests/unit/sdk_async_images_test.cpp`. Hardware
 performance of the integrated SDK is **not verified** until CI and a console run succeed.
 
 ## Licensing

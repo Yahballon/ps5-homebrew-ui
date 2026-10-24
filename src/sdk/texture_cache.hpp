@@ -53,6 +53,15 @@ class TextureCache
         return texture;
     }
 
+    std::uint32_t find(std::string_view key)
+    {
+        const auto it = textures_.find(std::string(key));
+        if (it == textures_.end())
+            return 0;
+        it->second.last_used = ++clock_;
+        return it->second.texture;
+    }
+
     bool erase(std::string_view key)
     {
         const auto it = textures_.find(std::string(key));

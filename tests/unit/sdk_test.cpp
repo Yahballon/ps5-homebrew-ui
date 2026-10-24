@@ -62,6 +62,18 @@ TEST(SdkJobs, CancelledWorkIsNotRun)
     EXPECT_EQ(jobs.take_completed().size(), 1u);
 }
 
+TEST(SdkJobs, SupportsPolledCompletionsWithoutQueueGrowth)
+{
+    hui::sdk::JobQueue jobs;
+    auto handle = jobs.submit([](hui::sdk::JobQueue::Context &ctx) {
+        ctx.set_progress(0.25f);
+    }, false);
+    ASSERT_TRUE(jobs.process_one());
+    EXPECT_TRUE(handle.finished());
+    EXPECT_FLOAT_EQ(handle.progress(), 1.0f);
+    EXPECT_TRUE(jobs.take_completed().empty());
+}
+
 TEST(SdkAssets, ValidatesAndEvictsLeastRecentlyUsed)
 {
     hui::sdk::ImageCache cache(32);

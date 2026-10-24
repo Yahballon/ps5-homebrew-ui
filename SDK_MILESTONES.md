@@ -25,12 +25,20 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
 - [x] Add a working file-read adapter via the existing bounded core file API.
 - [x] Ensure cached-cover reuploads obey pump()'s upload-attempt limit.
 - [x] SDK smoke, full lint, GoogleTest and host tooling integration tests pass
-      on GitHub Actions (run 40091979167); native cross-build previously blocked
-      by HTTP 404 downloading the original ps5-opengl SDK.
+      on GitHub Actions. Earlier native cross-build was blocked by HTTP 404
+      downloading the original ps5-opengl SDK; the SHA-256-verified mirror
+      unblocked the successful build.
 - [x] Add independently mirrored, SHA-256-pinned SDK 1.0.2 fallback while
       retaining both original archive and extracted manifest verification.
-- [ ] Cross-build the PS5 title and archive SDK successfully on this branch.
-- [ ] Boot and test an SDK consumer on a modified PS5.
+- [x] PS5 cross-build and SDK archive both passed on GitHub Actions runs
+      40092359437 and 40092364065; standalone SDK smoke test also passed.
+- [x] User reports installing/testing the built app on a real PS5 and confirms
+      that the app works (2026-10-24). This is a user-reported hardware smoke
+      test, **not** comprehensive SDK feature or performance validation.
+- [ ] Build and exercise a separate application integrating the new SDK
+      navigation, asynchronous cover pipeline and texture lifecycle on PS5.
+- [ ] Collect PS5 logs/screenshots and verify input, rendering, audio, and
+      repeated image loads without stalls or memory leaks.
 
 ## Production blockers, in priority order
 - [ ] WebP decode, priority queue and concrete PS5 worker ownership (bounded async image pipeline implemented).

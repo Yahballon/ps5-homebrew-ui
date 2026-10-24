@@ -119,8 +119,11 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
 - [x] Add R1-triggered 20-round independent PS5 PNG + GPU cache stress
       test to archive-only PPSA99863, with progress, counters and a
       single completion/failure log. Update title to v0.5.0.
-- [ ] Confirm GitHub CI: lint, unit tests, original build and archive-only
-      consumer link/installer for v0.5.0.
+- [x] GitHub Actions run 40100047639 at commit c1865f0a5192861de686fcf3131ceca6bc46a6d3:
+      lint, new stress regression tests, full host tests, ordinary PS5 title,
+      SDK static archive, original SDK Lab, archive-only PPSA99863 v0.5.0
+      compiler/linker and ZIP source-whitelist validation all PASS.
+      SDK Consumer installer artifact: 12562437870.
 - [ ] User tests v0.5.0 stress action on real PS5: 20/20 PASS and 0
       decode/GPU errors without sustained stalls or memory growth.
 - [ ] Add native OS suspend/resume callbacks, real EGL recovery and

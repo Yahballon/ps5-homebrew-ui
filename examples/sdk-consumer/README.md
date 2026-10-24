@@ -61,3 +61,32 @@ at source commit `14d02c4c1e9ab852025a22256375f87fa54badd4`.
 
 This CI result is **not** a PS5 console run. Hardware verification remains
 required, including GPU cache-clear/reupload and fresh file read behavior.
+
+## PS5 console validation — 2026-10-24
+
+**Hardware smoke test: PASSED (user tested on a modified PS5).**
+
+The user supplied three actual console screenshots showing the independent
+archive-linked consumer on its Home, PNG Gallery, and Frame Telemetry screens,
+and reported that all tested functions work.
+
+| Captured measurement | Result |
+| --- | --- |
+| Eight PNG gallery tiles | All 8/8 `READY` with image previews |
+| Background worker | `RUNNING` |
+| CPU image cache | 8192 KiB / 8 images |
+| GPU texture cache | 8192 KiB / 8 textures |
+| Captured frame number | 1198 |
+| Average frame time | 16.68 ms |
+| P99 frame time | 17.01 ms |
+| Max frame time | 17.03 ms |
+
+This verifies a **real PS5 successfully boots and runs UI rendering,
+navigation and PNG/texture caching linked from `libps5hui.a`**, which is
+independently verified as the app's only UI implementation by the GitHub
+Actions source whitelist and linker step. Frame statistics are a limited
+rolling capture (~60 Hz), not long-duration performance certification.
+
+Console logs were not provided; specific cache invalidation sequencing,
+fresh file reads, clean exit, error recovery and suspend/resume require
+separate evidence. The library has no stable binary ABI guarantee yet.

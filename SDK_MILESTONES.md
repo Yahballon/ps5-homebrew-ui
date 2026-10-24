@@ -208,6 +208,27 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       `shutdown worker joined=1` from runtime logs. Avoid claiming the
       shutdown worker has been verified before receiving the receipt.
 
+## v0.6.2: Visible shutdown receipt and file export (2026-10-24)
+
+- [x] User confirms v0.6.1 works on PS5 but cannot find any log file
+      at the previously documented /download0 sandbox/FTP path.
+- [x] Audit runtime_shims.c: it only tries /download0/hui/dev/app.log,
+      does not report failed fopen/freopen/mkdir, and its sandbox may be
+      inaccessible outside the title. Prior path was not guaranteed.
+- [x] Add header-only SDK diagnostic exporter with writable targets in
+      priority order: /data/PS5UI_SDK_Consumer/logs/shutdown.txt,
+      /mnt/usb0/PS5UI_SDK_Consumer/logs/shutdown.txt, then
+      /download0/hui/dev/shutdown.txt; only report a file as saved after
+      a successful atomic write. Add host tests for path/fallback failure.
+- [x] SDK Consumer PPSA99863 v0.6.2: on Options, stop/join the worker,
+      write a bounded shutdown receipt once and show an on-screen report
+      with actual join result, processed/cancelled jobs, export success
+      and the verified path; press X on the receipt to exit.
+- [ ] Confirm CI host test, PS5 cross-build and archive-only linkage;
+      then verify report screen and chosen export path on real hardware.
+- [ ] Actual OS suspend/resume, automatic EGL reconstruction and
+      native crash dump/symbolication remain outstanding.
+
 ## Production blockers, in priority order
 - [ ] WebP decoding, priority queue and production multi-worker scheduling
       (owned pthread worker, bounded image pipeline and stress harness exist).

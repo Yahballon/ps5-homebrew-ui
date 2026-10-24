@@ -11,11 +11,13 @@
 #include "sdk/soak_monitor.hpp"
 #include "sdk/worker_thread.hpp"
 #include "sdk/diagnostics.hpp"
+#include "sdk/diagnostic_export.hpp"
 #include "sdk/navigation.hpp"
 #include "sdk/read_image_file.hpp"
 #include "sdk/texture_cache.hpp"
 
 #include "core/input.hpp"
+#include "core/save_file.hpp"
 #include "gfx/draw_list.hpp"
 #include "gfx/font.hpp"
 #include "gfx/renderer.hpp"
@@ -41,6 +43,16 @@ constexpr const char *kImagePath = "/app0/sce_sys/icon0.png";
 constexpr const char *kFontPath = "/app0/assets/fonts/inter-regular.huifont";
 constexpr const char *kFontBold = "/app0/assets/fonts/inter-semibold.huifont";
 constexpr std::size_t kTiles = 8;
+
+struct ShutdownReceipt
+{
+    bool ready = false;
+    bool joined = false;
+    bool saved = false;
+    std::size_t cancelled = 0;
+    std::uint64_t processed = 0;
+    std::string path;
+};
 
 struct Face
 {
@@ -88,8 +100,9 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
                const hui::sdk::ImageCache &cpu, const hui::sdk::TextureCache &gpu,
                const hui::sdk::FrameMonitor &frames, bool worker_running,
                const hui::sdk::LifecycleMonitor &lifecycle, const hui::sdk::ImageStress &stress,
-               const hui::sdk::SoakMonitor &soak, std::uint64_t processed_jobs,
-               std::size_t selected, std::uint64_t frame_count)
+               const hui::sdk::SoakMonitor &soak, const ShutdownReceipt &receipt,
+               std::uint64_t processed_jobs, std::size_t selected,
+               std::uint64_t frame_count)
 {
     const Color foreground = Color::rgb(0xffffff);
     const Color dim = Color::rgb(0x9fb1c6);
@@ -100,11 +113,33 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
     draw.rounded_rect({72, 53, 1776, 140}, 24, card);
     draw.rounded_rect({72, 53, 13, 140}, 6, mint);
     label(draw, bold, "PS5 UI SDK  /  ARCHIVE CONSUMER", 110, 117, 42, foreground);
-    label(draw, regular, "by YAHBALLON  |  v0.6.1  |  libps5hui.a linked", 114, 161, 23, dim);
+    label(draw, regular, "by YAHBALLON  |  v0.6.2  |  libps5hui.a linked", 114, 161, 23, dim);
 
     const auto *route = navigation.current();
     const std::string current = route ? route->name : "home";
-    if (current == "home")
+    if (receipt.ready)
+    {
+        draw.rounded_rect({154, 254, 1610, 662}, 32, card);
+        label(draw, bold, "WORKER SHUTDOWN RECEIPT", 215, 340, 44, foreground);
+        label(draw, regular, "The worker has stopped. You can photograph this screen.",
+              218, 400, 26, dim);
+        label(draw, bold, receipt.joined ? "WORKER JOINED: YES" : "WORKER JOINED: NO",
+              225, 505, 40, receipt.joined ? mint : Color::rgb(0xff7e8b));
+        char report[160];
+        std::snprintf(report, sizeof(report), "Pending jobs cancelled: %zu    Processed jobs: %llu",
+                      receipt.cancelled, static_cast<unsigned long long>(receipt.processed));
+        label(draw, regular, report, 225, 569, 28, foreground);
+        label(draw, bold, receipt.saved ? "DIAGNOSTIC FILE: SAVED" :
+              "DIAGNOSTIC FILE: NO WRITABLE LOCATION", 225, 670, 31,
+              receipt.saved ? mint : Color::rgb(0xffb37d));
+        if (receipt.saved)
+            label(draw, regular, receipt.path, 225, 735, 24, foreground);
+        else
+            label(draw, regular, "Use a screenshot of this screen; the shutdown status is shown above.",
+                  225, 735, 23, dim);
+        label(draw, bold, "PRESS X TO EXIT", 225, 843, 32, mint);
+    }
+    else if (current == "home")
     {
         draw.rounded_rect({165, 295, 1590, 539}, 35, card);
         draw.circle(960, 450, 76, mint);
@@ -203,10 +238,13 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
         label(draw, regular, number, 925, 846, 21, dim);
     }
     draw.rounded_rect({73, 966, 1775, 65}, 20, Color::rgb(0x102639));
-    label(draw, regular,
-          "X  OPEN / NEXT     O  BACK     D-PAD  SELECT     SQUARE  RELOAD     "
-          "TRIANGLE  CLEAR GPU     R1  20 ROUNDS     R2  200 ROUNDS     OPTIONS  EXIT",
-          106, 1008, 22, dim);
+    if (receipt.ready)
+        label(draw, regular, "SHUTDOWN COMPLETE     X  EXIT TO PS5 HOME", 106, 1008, 24, mint);
+    else
+        label(draw, regular,
+              "X  OPEN / NEXT    O  BACK    SQUARE  RELOAD    TRIANGLE  CLEAR GPU    "
+              "R1  20    R2  200    OPTIONS  SHUTDOWN RECEIPT",
+              106, 1008, 21, dim);
 }
 
 } // namespace
@@ -214,7 +252,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
 int main()
 {
     using namespace hui;
-    sys::log("[HUI ARCHIVE CONSUMER] start v0.6.1 libps5hui.a");
+    sys::log("[HUI ARCHIVE CONSUMER] start v0.6.2 libps5hui.a");
     ps5::Display display;
     if (!display.open(1920, 1080))
     {
@@ -254,6 +292,7 @@ int main()
     sdk::FrameMonitor frametimes;
     sdk::ImageStress stress;
     sdk::SoakMonitor soak;
+    ShutdownReceipt receipt;
     gfx::DrawList frame;
     std::uint64_t frame_count = 0;
     std::size_t selected = 0;
@@ -293,28 +332,80 @@ int main()
             sys::log("[HUI ARCHIVE CONSUMER] input focus %s",
                      input.focus_lost ? "intercepted" : "restored");
         }
-        if (!input.focus_lost)
+        if (receipt.ready)
         {
-            if (input.is_pressed(Action::menu))
+            if (!input.focus_lost && input.is_pressed(Action::confirm))
             {
-                lifecycle.begin_shutdown();
-                breadcrumbs.record(static_cast<std::uint64_t>(now), "exit", "user requested");
-                images.cancel_all();
-                sys::log("[HUI ARCHIVE CONSUMER] shutdown begin pending=%zu processed=%llu",
-                         images.pending_count(),
-                         static_cast<unsigned long long>(worker.processed_jobs()));
-                const auto report = worker.stop();
-                sys::log("[HUI ARCHIVE CONSUMER] shutdown worker joined=%d queued_cancelled=%zu "
-                         "pending_queue=%zu processed=%llu",
-                         report.joined ? 1 : 0, report.cancelled_queued, queue.pending_count(),
-                         static_cast<unsigned long long>(report.processed_after_join));
                 gpu.clear();
                 renderer.release();
                 display.close();
                 pad.close();
-                sys::log("[HUI ARCHIVE CONSUMER] clean exit frame=%llu",
+                sys::log("[HUI ARCHIVE CONSUMER] clean exit after receipt frame=%llu",
                          static_cast<unsigned long long>(frame_count));
                 sys::quit();
+            }
+        }
+        else if (!input.focus_lost)
+        {
+            if (input.is_pressed(Action::menu))
+            {
+                lifecycle.begin_shutdown();
+                stress.cancel();
+                soak.finish(static_cast<std::uint64_t>(now));
+                breadcrumbs.record(static_cast<std::uint64_t>(now), "exit", "user requested");
+                images.cancel_all();
+                const auto shutdown = worker.stop();
+                receipt.joined = shutdown.joined;
+                receipt.cancelled = shutdown.cancelled_queued;
+                receipt.processed = shutdown.processed_after_join;
+                sys::log("[HUI ARCHIVE CONSUMER] shutdown worker joined=%d queued_cancelled=%zu processed=%llu",
+                         receipt.joined ? 1 : 0, receipt.cancelled,
+                         static_cast<unsigned long long>(receipt.processed));
+
+                // Export once after the worker joins; never write from the
+                // 60 FPS frame loop or pretend a failed export succeeded.
+                std::string report = "PS5 UI SDK Consumer v0.6.2 - shutdown receipt\\n";
+                char line[256];
+                std::snprintf(line, sizeof(line),
+                              "worker.joined=%d\\nworker.cancelled_queued=%zu\\nworker.processed=%llu\\n",
+                              receipt.joined ? 1 : 0, receipt.cancelled,
+                              static_cast<unsigned long long>(receipt.processed));
+                report += line;
+                const auto &stats = images.statistics();
+                std::snprintf(line, sizeof(line),
+                              "stress=%u/%u\\nimage.uploads=%llu\\nimage.decode_errors=%llu\\nimage.gpu_errors=%llu\\n",
+                              stress.completed(), stress.target(),
+                              static_cast<unsigned long long>(stats.uploaded),
+                              static_cast<unsigned long long>(stats.decode_failures),
+                              static_cast<unsigned long long>(stats.upload_failures));
+                report += line;
+                std::snprintf(line, sizeof(line),
+                              "cache.cpu_kib=%zu\\ncache.gpu_kib=%zu\\nsoak.peak_cpu_kib=%zu\\nsoak.peak_gpu_kib=%zu\\n",
+                              cpu.used_bytes() / 1024, gpu.used_bytes() / 1024,
+                              soak.peak_cpu_bytes() / 1024, soak.peak_gpu_bytes() / 1024);
+                report += line;
+                for (std::size_t i = 0; i < breadcrumbs.size(); ++i)
+                {
+                    const auto *event = breadcrumbs.at(i);
+                    std::snprintf(line, sizeof(line), "breadcrumb=%llu %s %s\\n",
+                                  static_cast<unsigned long long>(event->timestamp_us),
+                                  event->category.data(), event->message.data());
+                    report += line;
+                }
+                const auto export_result = sdk::export_diagnostics(
+                    report,
+                    [](const std::string &directory) {
+                        return save::ensure_directory(directory);
+                    },
+                    [](const std::string &filepath, std::string_view contents) {
+                        return save::write_atomic(filepath, contents);
+                    });
+                receipt.saved = export_result.saved;
+                receipt.path = export_result.path;
+                receipt.ready = true;
+                nav.push("shutdown");
+                sys::log("[HUI ARCHIVE CONSUMER] receipt saved=%d path=%s",
+                         receipt.saved ? 1 : 0, receipt.saved ? receipt.path.c_str() : "NONE");
             }
             if (input.is_pressed(Action::back))
                 nav.back();
@@ -385,7 +476,8 @@ int main()
             }
         }
 
-        images.pump(1);
+        if (!receipt.ready)
+            images.pump(1);
         sdk::StressEvent terminal_event = sdk::StressEvent::none;
         if (stress.running())
         {
@@ -418,7 +510,7 @@ int main()
             }
         }
         draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok, lifecycle,
-                  stress, soak, worker.processed_jobs(), selected, frame_count);
+                  stress, soak, receipt, worker.processed_jobs(), selected, frame_count);
         renderer.begin();
         renderer.draw(frame);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

@@ -371,3 +371,17 @@ The file export is one atomic write at shutdown; it does not introduce
 per-frame disk logging. It contains the worker join status, cached-image
 counters, stress-test result and recent lifecycle/cache breadcrumbs.
 No hardware test for v0.6.2 has been claimed yet.
+
+## v0.6.2 successful build (2026-10-24)
+
+[GitHub Actions 40136580964](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40136580964)
+passed formatting/lint, regression tests for all diagnostic file fallbacks,
+host integration and the complete PS5 app, SDK archive and independent
+consumer cross-link/install ZIP verification.
+
+[Get v0.6.2 PPSA99863.zip (artifact 12577500627)](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40136580964/artifacts/12577500627).
+
+**Hardware status:** The previous v0.6.1 was user-reported working but its
+log directory was missing. For v0.6.2, the shutdown receipt screen and
+write-success claim still require console testing. No saved-file path is
+guaranteed before the app probes it on the PS5.

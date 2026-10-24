@@ -8,7 +8,7 @@ renderer and are not yet a stable ABI.
 
 ```sh
 make sdk
-# dist/sdk/libps5hui.a
+# dist/sdk/lib/libps5hui.a
 # dist/ps5-homebrew-ui-sdk.tar.gz
 ```
 
@@ -26,6 +26,9 @@ replacement for the loader, and does not contain a second copy of the entry poin
 | `sdk/navigation.hpp` | Bounded, explicit screen/back-stack state and revisions |
 | `sdk/jobs.hpp` | Multi-producer worker queue, cancellation tokens and progress |
 | `sdk/assets.hpp` | Validated decoded RGBA images and memory-bounded CPU LRU cache |
+| `sdk/bmp.hpp` | Lightweight strict uncompressed 24/32-bit BMP decoder |
+| `sdk/image_decode.hpp` | Bounded PNG/JPEG/BMP/GIF/TGA/PNM decoder via vendored stb_image |
+| `sdk/texture_cache.hpp` | GPU budget/LRU cache via explicit render-thread callbacks |
 | `sdk/i18n.hpp` | Translatable keys, fallback catalog and named substitutions |
 | `sdk/paths.hpp` | Install/save/data/USB roots and validation of relative paths |
 | `sdk/diagnostics.hpp` | Allocation-free rolling frame times, p99 and budget misses |
@@ -45,6 +48,16 @@ auto token = jobs.submit([](hui::sdk::JobQueue::Context &ctx) {
 // A platform worker thread calls jobs.process_one() until shutdown.
 // The UI frame polls jobs.take_completed() and uploads finished images with
 // renderer.batch().create_texture(...); do not call OpenGL on the worker.
+
+hui::sdk::TextureCache texture_cache(
+    64u * 1024u * 1024u,
+    [&](const hui::sdk::Image &image) {
+        return renderer.batch().create_texture(image.width, image.height, image.rgba.data());
+    },
+    [&](std::uint32_t texture) { renderer.batch().destroy_texture(texture); });
+// texture_cache.get_or_upload("cover", image) on the render thread.
+// texture_cache.clear() before renderer.release().
+// On context loss, texture_cache.context_lost() must be called WITHOUT GL calls.
 ```
 
 The queue intentionally does **not** create OS threads: apps supply platform threads
@@ -62,8 +75,14 @@ also be considered by the file-accessing application.
 
 ## Remaining v1.0 blockers — do not misrepresent as implemented
 
-- PNG/JPEG/WebP decoders, on-demand GPU cache, upload queue, and GPU texture destruction.
-  The new `ImageCache` deliberately owns CPU RGBA images only.
+- **WebP** decoding and a complete streaming upload/prefetch pipeline. The
+  new `decode_image` handles PNG/JPEG/BMP/GIF/TGA/PNM through stb_image with
+  configurable input-size and decoded-pixel limits (GIF: first frame only).
+  The lightweight `decode_bmp` handles **uncompressed 24/32-bit BMP**.
+  `ImageCache` owns CPU RGBA images, while `TextureCache` uploads/evicts
+  through explicit GL callbacks. `GlBatch::destroy_texture` now releases image textures; callers
+  must not draw texture handles after eviction. The cache must be cleared
+  *before* destroying the GL context.
 - A production OS thread pool with shutdown/join ownership, cancellation on lifecycle
   transitions, and priority queues.
 - Complete multilingual shaping / bidirectional text (dictionary substitution is **not**
@@ -75,7 +94,8 @@ also be considered by the file-accessing application.
 - Full PNG screenshots during live gameplay, image/asset hot reload, JSON theme editing,
   and optional renderer ports.
 
-The portable service APIs have unit tests in `tests/unit/sdk_test.cpp`. Hardware
+The portable service APIs have unit tests in `tests/unit/sdk_test.cpp`,
+`tests/unit/sdk_images_test.cpp`, and `tests/unit/sdk_decode_test.cpp`. Hardware
 performance of the integrated SDK is **not verified** until CI and a console run succeed.
 
 ## Licensing

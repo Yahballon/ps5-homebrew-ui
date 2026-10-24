@@ -171,7 +171,7 @@ app, open **Theme Lab** and press **L2** / **R2**.
 
 The reusable `libps5hui.a` package and the portable SDK helpers can be built with
 `make sdk`. See [docs/SDK.md](docs/SDK.md) for packaging, background jobs,
-image caching, navigation, localization, diagnostics, supported APIs and remaining
+GPU image caching, PNG/JPEG/BMP decoding, navigation, localization, diagnostics, supported APIs and remaining
 production blockers. This is not yet a stable, hardware-validated SDK release.
 
 ## Quick start

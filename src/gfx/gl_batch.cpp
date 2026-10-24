@@ -293,6 +293,13 @@ void GlBatch::release()
         glDeleteProgram(mesh_program_);
     if (font_count_ != 0)
         glDeleteTextures(static_cast<GLsizei>(font_count_), font_textures_);
+    if (!extra_font_textures_.empty())
+        glDeleteTextures(static_cast<GLsizei>(extra_font_textures_.size()),
+                         extra_font_textures_.data());
+    if (!user_textures_.empty())
+        glDeleteTextures(static_cast<GLsizei>(user_textures_.size()), user_textures_.data());
+    extra_font_textures_.clear();
+    user_textures_.clear();
     for (GLuint &texture : font_textures_)
         texture = 0;
     font_count_ = 0;
@@ -353,6 +360,8 @@ std::uint32_t GlBatch::create_font_texture(const Font &font)
         ++font_count_;
         return kFontHandleBase | font_count_;
     }
+    if (texture != 0)
+        extra_font_textures_.push_back(texture);
     return texture;
 }
 
@@ -368,7 +377,23 @@ std::uint32_t GlBatch::create_texture(int width, int height, const std::uint8_t 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if (texture != 0)
+        user_textures_.push_back(texture);
     return texture;
+}
+
+bool GlBatch::destroy_texture(std::uint32_t texture)
+{
+    if (texture == 0)
+        return false;
+    const auto it = std::find(user_textures_.begin(), user_textures_.end(),
+                              static_cast<GLuint>(texture));
+    if (it == user_textures_.end())
+        return false;
+    const GLuint name = *it;
+    glDeleteTextures(1, &name);
+    user_textures_.erase(it);
+    return true;
 }
 
 void GlBatch::draw(const DrawList &list, const Viewport &viewport, int surface_width,

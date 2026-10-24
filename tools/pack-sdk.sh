@@ -17,13 +17,14 @@ cd "$root"
         exit 2
     }
 }
-ar_tool=$(command -v llvm-ar || command -v ar)
+ar_tool=$(command -v llvm-ar || command -v llvm-ar-18 || command -v ar)
 [[ -n "$ar_tool" ]] || { echo "llvm-ar or ar required" >&2; exit 2; }
 
 stage="$root/dist/sdk"
+rm -rf -- "$stage"
 mkdir -p "$stage/include" "$stage/lib" "$stage/share"
 objects=()
-for component in audio core gfx ui platform/ps5 third_party/stb; do
+for component in audio core gfx ui sdk platform/ps5 third_party/stb; do
     folder="$root/build/obj/src/$component"
     [[ -d $folder ]] || continue
     while IFS= read -r -d '' obj; do objects+=("$obj"); done < <(
@@ -43,5 +44,6 @@ done
 cp LICENSE THIRD_PARTY_NOTICES.md "$stage/share/"
 cp docs/SDK.md "$stage/share/SDK.md"
 cp -r assets "$stage/share/"
+cp -r src/runtime "$stage/share/runtime-sources"
 tar -czf "$root/dist/ps5-homebrew-ui-sdk.tar.gz" -C "$root/dist" sdk
 printf 'SDK: %s (%s objects)\n' "$root/dist/ps5-homebrew-ui-sdk.tar.gz" "${#objects[@]}"

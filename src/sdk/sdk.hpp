@@ -5,11 +5,14 @@
 #pragma once
 
 #include "sdk/assets.hpp"
+#include "sdk/bmp.hpp"
 #include "sdk/diagnostics.hpp"
 #include "sdk/i18n.hpp"
+#include "sdk/image_decode.hpp"
 #include "sdk/jobs.hpp"
 #include "sdk/navigation.hpp"
 #include "sdk/paths.hpp"
+#include "sdk/texture_cache.hpp"
 
 // Existing graphics and components remain opt-in for portability:
 // #include "gfx/renderer.hpp"

@@ -15,11 +15,16 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       UTF-8 fallback, path traversal and frame statistics.
 - [x] Add SDK-specific usage and limitations documentation.
 - [x] Add an archive packaging target for the existing library subsystems.
+- [x] Add CPU BMP decoder and explicit bounded render-thread GPU texture cache.
+- [x] Vendor upstream stb_image 2.30 and decode PNG/JPEG/BMP/GIF/TGA/PNM under
+      encoded-size/pixel-count caps, plus a tiny PNG regression fixture.
+- [x] Track renderer-created textures and allow explicit image texture deletion.
+- [x] Add build-artifact packaging and image-cache regression tests.
 - [ ] GitHub Actions lint/unit/full PS5 app build passes on this branch.
 - [ ] Boot and test an SDK consumer on a modified PS5.
 
 ## Production blockers, in priority order
-- [ ] PNG/JPEG/WebP decode, asynchronous loading with GPU cache and texture free API.
+- [ ] WebP decode and streaming/prefetch pipeline (PNG/JPEG/BMP/GIF/TGA/PNM + explicit GPU LRU implemented).
 - [ ] OS thread management and graceful shutdown, completion/error result API.
 - [ ] Full Unicode shaping, bidirectional text, locale formatting and accessibility.
 - [ ] Native crash dump/symbolication and EGL/lifecycle recovery.

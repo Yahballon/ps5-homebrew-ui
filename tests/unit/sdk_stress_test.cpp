@@ -15,12 +15,11 @@
 namespace
 {
 constexpr std::array<std::uint8_t, 70> kPng = {
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
-    0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-    0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00,
-    0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x10, 0x50, 0x30, 0xf8,
-    0x0f, 0x00, 0x02, 0x04, 0x01, 0x60, 0x8d, 0xbc, 0xbb, 0x71, 0x00, 0x00,
-    0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82};
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48,
+    0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00,
+    0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78,
+    0x9c, 0x63, 0x10, 0x50, 0x30, 0xf8, 0x0f, 0x00, 0x02, 0x04, 0x01, 0x60, 0x8d, 0xbc,
+    0xbb, 0x71, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82};
 
 TEST(SdkImageStress, CompletesExactNumberOfWaves)
 {
@@ -57,15 +56,15 @@ TEST(SdkAsyncImages, ResetDiscardsOldResultsAndReloadsSameKey)
     hui::sdk::JobQueue jobs;
     hui::sdk::ImageCache cpu(4096);
     std::uint32_t next_id = 3;
-    hui::sdk::TextureCache gpu(4096,
-        [&next_id](const hui::sdk::Image &) { return ++next_id; },
-        [](std::uint32_t) {});
+    hui::sdk::TextureCache gpu(
+        4096, [&next_id](const hui::sdk::Image &) { return ++next_id; }, [](std::uint32_t) {});
     std::size_t reads = 0;
     hui::sdk::AsyncImages images(jobs, cpu, gpu,
-        [&reads](const std::string &, std::size_t) {
-            ++reads;
-            return std::vector<std::uint8_t>(kPng.begin(), kPng.end());
-        });
+                                 [&reads](const std::string &, std::size_t)
+                                 {
+                                     ++reads;
+                                     return std::vector<std::uint8_t>(kPng.begin(), kPng.end());
+                                 });
     ASSERT_TRUE(images.request("a", "old.png"));
     images.reset();
     ASSERT_TRUE(images.request("a", "new.png"));
@@ -84,10 +83,10 @@ TEST(SdkAsyncImages, ReportsFailedDecodeAndCanRetry)
 {
     hui::sdk::JobQueue jobs;
     hui::sdk::ImageCache cpu(4096);
-    hui::sdk::TextureCache gpu(4096, [](const hui::sdk::Image &) { return 1u; },
-                               [](std::uint32_t) {});
-    hui::sdk::AsyncImages images(jobs, cpu, gpu,
-        [](const std::string &, std::size_t) { return std::vector<std::uint8_t>{}; });
+    hui::sdk::TextureCache gpu(
+        4096, [](const hui::sdk::Image &) { return 1u; }, [](std::uint32_t) {});
+    hui::sdk::AsyncImages images(jobs, cpu, gpu, [](const std::string &, std::size_t)
+                                 { return std::vector<std::uint8_t>{}; });
     ASSERT_TRUE(images.request("broken", "missing.png"));
     ASSERT_TRUE(jobs.process_one());
     EXPECT_EQ(images.pump(), 0u);

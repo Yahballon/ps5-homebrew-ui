@@ -61,10 +61,22 @@ class ImageStress
         running_ = false;
     }
 
-    bool running() const { return running_; }
-    bool failed() const { return failed_; }
-    std::uint32_t completed() const { return completed_; }
-    std::uint32_t target() const { return target_; }
+    bool running() const
+    {
+        return running_;
+    }
+    bool failed() const
+    {
+        return failed_;
+    }
+    std::uint32_t completed() const
+    {
+        return completed_;
+    }
+    std::uint32_t target() const
+    {
+        return target_;
+    }
 
   private:
     std::uint32_t completed_ = 0;

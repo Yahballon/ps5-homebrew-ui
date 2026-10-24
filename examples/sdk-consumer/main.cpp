@@ -87,8 +87,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
                const hui::sdk::ImageCache &cpu, const hui::sdk::TextureCache &gpu,
                const hui::sdk::FrameMonitor &frames, bool worker_running,
                const hui::sdk::LifecycleMonitor &lifecycle, const hui::sdk::ImageStress &stress,
-               std::uint64_t processed_jobs,
-               std::size_t selected, std::uint64_t frame_count)
+               std::uint64_t processed_jobs, std::size_t selected, std::uint64_t frame_count)
 {
     const Color foreground = Color::rgb(0xffffff);
     const Color dim = Color::rgb(0x9fb1c6);
@@ -119,9 +118,11 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
         if (stress.target())
         {
             char progress[80];
-            std::snprintf(progress, sizeof(progress), "STRESS %u/%u %s",
-                          stress.completed(), stress.target(),
-                          stress.running() ? "RUNNING" : stress.failed() ? "FAIL" : "PASS");
+            std::snprintf(progress, sizeof(progress), "STRESS %u/%u %s", stress.completed(),
+                          stress.target(),
+                          stress.running()  ? "RUNNING"
+                          : stress.failed() ? "FAIL"
+                                            : "PASS");
             label(draw, bold, progress, 1320, 270, 22,
                   stress.failed() ? Color::rgb(0xff7e8b) : mint);
         }
@@ -187,10 +188,11 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
                       static_cast<unsigned long long>(stats.upload_failures));
         label(draw, regular, number, 225, 723, 21, dim);
         std::snprintf(number, sizeof(number), "STRESS %u/%u %s", stress.completed(),
-                      stress.target(), stress.running() ? "RUNNING" :
-                      stress.failed() ? "FAILED" : "IDLE / PASS");
-        label(draw, regular, number, 225, 784, 23,
-              stress.failed() ? Color::rgb(0xff7e8b) : mint);
+                      stress.target(),
+                      stress.running()  ? "RUNNING"
+                      : stress.failed() ? "FAILED"
+                                        : "IDLE / PASS");
+        label(draw, regular, number, 225, 784, 23, stress.failed() ? Color::rgb(0xff7e8b) : mint);
     }
     draw.rounded_rect({73, 966, 1775, 65}, 20, Color::rgb(0x102639));
     label(draw, regular,
@@ -371,33 +373,31 @@ int main()
                 std::snprintf(key, sizeof(key), "arch-%zu", i);
                 const auto state = images.status(key);
                 all_ready &= state == sdk::ImageLoadState::ready;
-                any_failed |= state == sdk::ImageLoadState::failed ||
-                              state == sdk::ImageLoadState::cancelled;
+                any_failed |=
+                    state == sdk::ImageLoadState::failed || state == sdk::ImageLoadState::cancelled;
             }
-            const auto event = stress.tick(all_ready, any_failed,
-                                           static_cast<std::uint64_t>(now));
+            const auto event = stress.tick(all_ready, any_failed, static_cast<std::uint64_t>(now));
             if (event == sdk::StressEvent::reload)
             {
                 reload_all();
-                sys::log("[HUI ARCHIVE CONSUMER] stress %u/%u",
-                         stress.completed(), stress.target());
+                sys::log("[HUI ARCHIVE CONSUMER] stress %u/%u", stress.completed(),
+                         stress.target());
             }
-            else if (event == sdk::StressEvent::completed ||
-                     event == sdk::StressEvent::failed)
+            else if (event == sdk::StressEvent::completed || event == sdk::StressEvent::failed)
             {
                 const auto &stats = images.statistics();
-                sys::log("[HUI ARCHIVE CONSUMER] stress %s %u/%u uploads=%llu decode_errors=%llu gpu_errors=%llu",
-                         event == sdk::StressEvent::completed ? "PASS" : "FAIL",
-                         stress.completed(), stress.target(),
-                         static_cast<unsigned long long>(stats.uploaded),
+                sys::log("[HUI ARCHIVE CONSUMER] stress %s %u/%u uploads=%llu decode_errors=%llu "
+                         "gpu_errors=%llu",
+                         event == sdk::StressEvent::completed ? "PASS" : "FAIL", stress.completed(),
+                         stress.target(), static_cast<unsigned long long>(stats.uploaded),
                          static_cast<unsigned long long>(stats.decode_failures),
                          static_cast<unsigned long long>(stats.upload_failures));
                 breadcrumbs.record(static_cast<std::uint64_t>(now), "stress",
                                    event == sdk::StressEvent::completed ? "PASS" : "FAIL");
             }
         }
-        draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok, lifecycle, stress,
-                  worker.processed_jobs(), selected, frame_count);
+        draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok, lifecycle,
+                  stress, worker.processed_jobs(), selected, frame_count);
         renderer.begin();
         renderer.draw(frame);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

@@ -39,7 +39,10 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       navigation, CPU/GPU caches, real PNG decoding on a PS5 pthread worker,
       bounded render-thread uploads, controller input and frame timings.
 - [x] Add unit tests for SDK Demo route transitions and demo-specific packaging.
-- [ ] Confirm standalone SDK Demo CI artifact builds successfully.
+- [x] Standalone SDK Demo CI build and installer validation passed on GitHub
+      Actions run 40094858417 (source commit 9e076870a52bc48e6703b048aa8e935352f503b0).
+      Independent installable artifact: PPSA99862.zip, GitHub Actions artifact
+      12560840719. The original PPSA99050 ZIP and SDK archive also passed.
 - [ ] User tests SDK Demo navigation, covers, cache invalidation and memory
       behavior on an actual PS5, and shares its logs.
 - [ ] Build and exercise a separate application integrating the new SDK

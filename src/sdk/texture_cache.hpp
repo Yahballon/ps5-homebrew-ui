@@ -40,8 +40,7 @@ class TextureCache
             it->second.last_used = ++clock_;
             return it->second.texture;
         }
-        if (key.empty() || !image.valid() || image.rgba.size() > budget_ || !upload_ ||
-            !free_)
+        if (key.empty() || !image.valid() || image.rgba.size() > budget_ || !upload_ || !free_)
             return 0;
         while (used_ > budget_ - image.rgba.size())
             evict_oldest();
@@ -95,8 +94,14 @@ class TextureCache
             evict_oldest();
     }
 
-    std::size_t used_bytes() const { return used_; }
-    std::size_t entries() const { return textures_.size(); }
+    std::size_t used_bytes() const
+    {
+        return used_;
+    }
+    std::size_t entries() const
+    {
+        return textures_.size();
+    }
 
   private:
     struct Entry

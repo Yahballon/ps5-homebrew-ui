@@ -36,10 +36,12 @@ TEST(SdkJobs, RunsOnWorkerAndReturnsCompletionToUi)
 {
     hui::sdk::JobQueue jobs;
     std::atomic<int> invoked{0};
-    auto handle = jobs.submit([&invoked](hui::sdk::JobQueue::Context &ctx) {
-        invoked.fetch_add(1);
-        ctx.set_progress(0.6f);
-    });
+    auto handle = jobs.submit(
+        [&invoked](hui::sdk::JobQueue::Context &ctx)
+        {
+            invoked.fetch_add(1);
+            ctx.set_progress(0.6f);
+        });
     std::thread worker([&jobs]() { EXPECT_TRUE(jobs.process_one()); });
     worker.join();
     EXPECT_EQ(invoked.load(), 1);
@@ -65,9 +67,8 @@ TEST(SdkJobs, CancelledWorkIsNotRun)
 TEST(SdkJobs, SupportsPolledCompletionsWithoutQueueGrowth)
 {
     hui::sdk::JobQueue jobs;
-    auto handle = jobs.submit([](hui::sdk::JobQueue::Context &ctx) {
-        ctx.set_progress(0.25f);
-    }, false);
+    auto handle =
+        jobs.submit([](hui::sdk::JobQueue::Context &ctx) { ctx.set_progress(0.25f); }, false);
     ASSERT_TRUE(jobs.process_one());
     EXPECT_TRUE(handle.finished());
     EXPECT_FLOAT_EQ(handle.progress(), 1.0f);
@@ -77,7 +78,8 @@ TEST(SdkJobs, SupportsPolledCompletionsWithoutQueueGrowth)
 TEST(SdkAssets, ValidatesAndEvictsLeastRecentlyUsed)
 {
     hui::sdk::ImageCache cache(32);
-    auto make = []() {
+    auto make = []()
+    {
         hui::sdk::Image image;
         image.width = 2;
         image.height = 2;

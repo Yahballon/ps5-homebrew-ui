@@ -20,12 +20,12 @@ TEST(SdkBitmap, DecodesOnePixel24BitBgr)
     bytes[0] = 'B';
     bytes[1] = 'M';
     bytes[2] = 58;
-    bytes[10] = 54; // pixel data offset
-    bytes[14] = 40; // BITMAPINFOHEADER
-    bytes[18] = 1;  // width 1
-    bytes[22] = 1;  // height 1 (bottom up)
-    bytes[26] = 1;  // planes
-    bytes[28] = 24; // 24 bits/pixel
+    bytes[10] = 54;   // pixel data offset
+    bytes[14] = 40;   // BITMAPINFOHEADER
+    bytes[18] = 1;    // width 1
+    bytes[22] = 1;    // height 1 (bottom up)
+    bytes[26] = 1;    // planes
+    bytes[28] = 24;   // 24 bits/pixel
     bytes[54] = 0x12; // blue
     bytes[55] = 0x34; // green
     bytes[56] = 0x56; // red
@@ -82,8 +82,7 @@ TEST(SdkTextureCache, ContextLossDoesNotCallGl)
 {
     int frees = 0;
     hui::sdk::TextureCache cache(
-        4, [](const hui::sdk::Image &) { return 55u; },
-        [&frees](std::uint32_t) { ++frees; });
+        4, [](const hui::sdk::Image &) { return 55u; }, [&frees](std::uint32_t) { ++frees; });
     hui::sdk::Image image;
     image.width = 1;
     image.height = 1;

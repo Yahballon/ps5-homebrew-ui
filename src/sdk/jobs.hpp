@@ -31,18 +31,32 @@ class JobQueue
     class Handle
     {
       public:
-        bool valid() const { return static_cast<bool>(shared_); }
+        bool valid() const
+        {
+            return static_cast<bool>(shared_);
+        }
         void cancel() const
         {
             if (shared_)
                 shared_->cancelled.store(true);
         }
-        bool cancelled() const { return shared_ && shared_->cancelled.load(); }
-        bool finished() const { return shared_ && shared_->finished.load(); }
-        float progress() const { return shared_ ? shared_->progress.load() : 0.0f; }
+        bool cancelled() const
+        {
+            return shared_ && shared_->cancelled.load();
+        }
+        bool finished() const
+        {
+            return shared_ && shared_->finished.load();
+        }
+        float progress() const
+        {
+            return shared_ ? shared_->progress.load() : 0.0f;
+        }
 
       private:
-        explicit Handle(std::shared_ptr<Shared> shared) : shared_(std::move(shared)) {}
+        explicit Handle(std::shared_ptr<Shared> shared) : shared_(std::move(shared))
+        {
+        }
         std::shared_ptr<Shared> shared_;
         friend class JobQueue;
     };
@@ -50,8 +64,13 @@ class JobQueue
     class Context
     {
       public:
-        explicit Context(Shared &shared) : shared_(shared) {}
-        bool cancelled() const { return shared_.cancelled.load(); }
+        explicit Context(Shared &shared) : shared_(shared)
+        {
+        }
+        bool cancelled() const
+        {
+            return shared_.cancelled.load();
+        }
         void set_progress(float fraction) const
         {
             if (fraction < 0.0f)

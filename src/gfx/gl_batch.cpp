@@ -386,8 +386,8 @@ bool GlBatch::destroy_texture(std::uint32_t texture)
 {
     if (texture == 0)
         return false;
-    const auto it = std::find(user_textures_.begin(), user_textures_.end(),
-                              static_cast<GLuint>(texture));
+    const auto it =
+        std::find(user_textures_.begin(), user_textures_.end(), static_cast<GLuint>(texture));
     if (it == user_textures_.end())
         return false;
     const GLuint name = *it;

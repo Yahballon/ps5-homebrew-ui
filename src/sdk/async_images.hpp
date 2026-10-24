@@ -40,14 +40,14 @@ enum class ImageLoadState : std::uint8_t
 class AsyncImages
 {
   public:
-    using Reader = std::function<std::vector<std::uint8_t>(const std::string &,
-                                                            std::size_t max_bytes)>;
+    using Reader =
+        std::function<std::vector<std::uint8_t>(const std::string &, std::size_t max_bytes)>;
 
     AsyncImages(JobQueue &jobs, ImageCache &cpu, TextureCache &gpu, Reader read,
                 std::size_t max_encoded = 32u * 1024u * 1024u,
                 std::size_t max_pixels = 16u * 1024u * 1024u)
-        : jobs_(jobs), cpu_(cpu), gpu_(gpu), read_(std::move(read)),
-          max_encoded_(max_encoded), max_pixels_(max_pixels)
+        : jobs_(jobs), cpu_(cpu), gpu_(gpu), read_(std::move(read)), max_encoded_(max_encoded),
+          max_pixels_(max_pixels)
     {
     }
 
@@ -71,7 +71,8 @@ class AsyncImages
         auto result = std::make_shared<PendingResult>();
         auto handle = jobs_.submit(
             [read = read_, path = std::move(path), result, max_bytes = max_encoded_,
-             max_pixels = max_pixels_](JobQueue::Context &ctx) {
+             max_pixels = max_pixels_](JobQueue::Context &ctx)
+            {
                 if (ctx.cancelled())
                     return;
                 const auto encoded = read(path, max_bytes);
@@ -160,7 +161,10 @@ class AsyncImages
         ready_.clear();
     }
 
-    std::size_t pending_count() const { return pending_.size() + ready_.size(); }
+    std::size_t pending_count() const
+    {
+        return pending_.size() + ready_.size();
+    }
 
   private:
     struct PendingResult

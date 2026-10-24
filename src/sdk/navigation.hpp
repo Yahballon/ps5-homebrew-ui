@@ -23,7 +23,9 @@ struct Route
 class Navigator
 {
   public:
-    explicit Navigator(std::size_t max_depth = 64) : max_depth_(max_depth) {}
+    explicit Navigator(std::size_t max_depth = 64) : max_depth_(max_depth)
+    {
+    }
 
     bool set_root(std::string name, std::string state = {})
     {
@@ -83,9 +85,18 @@ class Navigator
         return pages_.empty() ? nullptr : &pages_.back();
     }
 
-    bool can_back() const { return pages_.size() > 1; }
-    std::size_t depth() const { return pages_.size(); }
-    std::uint64_t revision() const { return revision_; }
+    bool can_back() const
+    {
+        return pages_.size() > 1;
+    }
+    std::size_t depth() const
+    {
+        return pages_.size();
+    }
+    std::uint64_t revision() const
+    {
+        return revision_;
+    }
 
   private:
     std::vector<Route> pages_;

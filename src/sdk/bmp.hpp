@@ -49,14 +49,14 @@ inline std::optional<Image> decode_bmp(std::span<const std::uint8_t> bytes,
 
     const std::uint32_t raw_width = detail::bmp_u32(bytes, 18);
     const std::uint32_t raw_height = detail::bmp_u32(bytes, 22);
-    if (raw_width == 0 || raw_width > 0x7fffffffu ||
-        raw_height == 0 || raw_height == 0x80000000u)
+    if (raw_width == 0 || raw_width > 0x7fffffffu || raw_height == 0 || raw_height == 0x80000000u)
         return std::nullopt;
 
     const bool top_down = (raw_height & 0x80000000u) != 0;
     const std::size_t width = raw_width;
-    const std::size_t height = top_down ? 0u - static_cast<std::size_t>(static_cast<std::int32_t>(raw_height))
-                                        : raw_height;
+    const std::size_t height =
+        top_down ? 0u - static_cast<std::size_t>(static_cast<std::int32_t>(raw_height))
+                 : raw_height;
     if (height == 0 || height > 0x7fffffffu || width > max_pixels / height ||
         detail::bmp_u16(bytes, 26) != 1 || detail::bmp_u32(bytes, 30) != 0)
         return std::nullopt;

@@ -17,8 +17,7 @@ namespace hui::sdk
 // Only call from a worker; the existing checked file reader supports both
 // sandbox and elevated filesystem paths subject to title permissions.
 // An empty result means the file is empty, missing, inaccessible or too large.
-inline std::vector<std::uint8_t> read_image_file(const std::string &path,
-                                                 std::size_t max_bytes)
+inline std::vector<std::uint8_t> read_image_file(const std::string &path, std::size_t max_bytes)
 {
     std::string bytes;
     if (!save::read_file(path, &bytes, max_bytes))

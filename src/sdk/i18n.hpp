@@ -16,7 +16,9 @@ namespace hui::sdk
 class Translations
 {
   public:
-    explicit Translations(std::string fallback = "en") : fallback_(std::move(fallback)) {}
+    explicit Translations(std::string fallback = "en") : fallback_(std::move(fallback))
+    {
+    }
 
     void set(std::string language, std::string key, std::string value)
     {

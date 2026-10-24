@@ -14,8 +14,8 @@
 namespace hui::sdk
 {
 
-std::optional<Image> decode_image(std::span<const std::uint8_t> bytes,
-                                  std::size_t max_pixels, std::size_t max_encoded_bytes)
+std::optional<Image> decode_image(std::span<const std::uint8_t> bytes, std::size_t max_pixels,
+                                  std::size_t max_encoded_bytes)
 {
     if (bytes.empty() || bytes.size() > max_encoded_bytes ||
         bytes.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
@@ -25,8 +25,8 @@ std::optional<Image> decode_image(std::span<const std::uint8_t> bytes,
     int width = 0;
     int height = 0;
     int channels = 0;
-    if (!stbi_info_from_memory(bytes.data(), length, &width, &height, &channels) ||
-        width <= 0 || height <= 0)
+    if (!stbi_info_from_memory(bytes.data(), length, &width, &height, &channels) || width <= 0 ||
+        height <= 0)
         return std::nullopt;
 
     const auto w = static_cast<std::size_t>(width);

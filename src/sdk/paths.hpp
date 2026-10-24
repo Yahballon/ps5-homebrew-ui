@@ -25,7 +25,9 @@ enum class StorageRoot : std::size_t
 class StoragePaths
 {
   public:
-    StoragePaths() : roots_{"/app0", "/download0", "/data", "/mnt/usb0"} {}
+    StoragePaths() : roots_{"/app0", "/download0", "/data", "/mnt/usb0"}
+    {
+    }
 
     void set_root(StorageRoot kind, std::string path)
     {
@@ -40,9 +42,8 @@ class StoragePaths
         while (start < relative.size())
         {
             const auto end = relative.find('/', start);
-            const auto part = relative.substr(start, end == std::string_view::npos
-                                                         ? std::string_view::npos
-                                                         : end - start);
+            const auto part = relative.substr(
+                start, end == std::string_view::npos ? std::string_view::npos : end - start);
             if (part.empty() || part == "." || part == ".." ||
                 part.find('\\') != std::string_view::npos ||
                 part.find(':') != std::string_view::npos)

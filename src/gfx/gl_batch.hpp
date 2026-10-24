@@ -63,7 +63,7 @@ class GlBatch
     std::size_t draw_calls_ = 0;
     GLuint font_textures_[kFontSlots] = {};
     std::uint32_t font_count_ = 0;
-    std::vector<GLuint> user_textures_; // RGBA image textures owned by this batch
+    std::vector<GLuint> user_textures_;       // RGBA image textures owned by this batch
     std::vector<GLuint> extra_font_textures_; // fonts beyond the six reserved slots
 };
 

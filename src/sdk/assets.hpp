@@ -30,16 +30,14 @@ struct Image
             return false;
         const auto w = static_cast<std::size_t>(width);
         const auto h = static_cast<std::size_t>(height);
-        return w <= std::numeric_limits<std::size_t>::max() / h / 4 &&
-               rgba.size() == w * h * 4;
+        return w <= std::numeric_limits<std::size_t>::max() / h / 4 && rgba.size() == w * h * 4;
     }
 };
 
 class ImageCache
 {
   public:
-    explicit ImageCache(std::size_t budget_bytes = 32u * 1024u * 1024u)
-        : budget_(budget_bytes)
+    explicit ImageCache(std::size_t budget_bytes = 32u * 1024u * 1024u) : budget_(budget_bytes)
     {
     }
 
@@ -90,8 +88,14 @@ class ImageCache
         evict();
     }
 
-    std::size_t used_bytes() const { return used_; }
-    std::size_t entries() const { return images_.size(); }
+    std::size_t used_bytes() const
+    {
+        return used_;
+    }
+    std::size_t entries() const
+    {
+        return images_.size();
+    }
 
   private:
     struct Entry

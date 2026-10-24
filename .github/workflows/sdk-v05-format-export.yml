@@ -1,0 +1,31 @@
+# Temporary readonly export of exact clang-format-18 results for SDK v0.5.
+name: SDK v05 format export
+on:
+  push:
+    branches: ['feature/ui-sdk-*']
+permissions:
+  contents: read
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install clang-format 18
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y clang-format-18
+      - name: Format new SDK code
+        run: |
+          clang-format-18 -i src/sdk/async_images.hpp src/sdk/image_stress.hpp src/sdk/sdk.hpp tests/unit/sdk_stress_test.cpp examples/sdk-consumer/main.cpp
+      - name: Export formatted files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, subprocess
+          for path in subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines():
+              data=base64.b64encode(Path(path).read_bytes()).decode('ascii')
+              for n,start in enumerate(range(0,len(data),1500)):
+                  print(f'HUIFMT|{path}|{n}|{data[start:start+1500]}', flush=True)
+              print(f'HUIEND|{path}|{len(data)}', flush=True)
+          PY

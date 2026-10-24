@@ -198,3 +198,8 @@ help:
 	  'Build speed:         BUILD_JOBS defaults to all CPUs; USE_CCACHE=0 disables ccache' \
 	  'make clean           Remove build/, dist/, and generated libc.prx' \
 	  'make distclean       Also remove the ignored .deps/ cache'
+
+# Experimental reusable SDK package (builds the same cross-compiled objects).
+.PHONY: sdk
+sdk: app
+	bash tools/pack-sdk.sh

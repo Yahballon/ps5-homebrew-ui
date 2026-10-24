@@ -167,6 +167,13 @@ app, open **Theme Lab** and press **L2** / **R2**.
 </table>
 <!-- END:themes -->
 
+## Reusable SDK (experimental)
+
+The reusable `libps5hui.a` package and the portable SDK helpers can be built with
+`make sdk`. See [docs/SDK.md](docs/SDK.md) for packaging, background jobs,
+image caching, navigation, localization, diagnostics, supported APIs and remaining
+production blockers. This is not yet a stable, hardware-validated SDK release.
+
 ## Quick start
 
 You need Linux or WSL with `clang-18`, `ninja`, `make` and `python3`. The

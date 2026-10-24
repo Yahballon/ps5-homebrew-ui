@@ -200,3 +200,29 @@ in the displayed window.
 measurements across multiple sessions, focus-loss and OS suspend/resume
 recovery, native crash dumps, explicit EGL context reconstruction, and
 controlled Options shutdown with logs. Those remain SDK v1.0 tasks.
+
+
+## v0.6.0 — long-run test (hardware validation pending)
+
+- Title remains **PPSA99863**, version **v0.6.0**.
+- **R1** in gallery: 20 cache/PNG decode cycles (unchanged).
+- **R2** in gallery: **200** cycles, eight images per wave, with the same
+  per-wave 15-second timeout and maximum one GPU upload per frame.
+- Gallery shows `STRESS 200/200 PASS` on success. Press R2 again during a
+  running stress test to cancel it.
+- Telemetry adds observed **peak decoded-image CPU-cache KiB**, **peak
+  GPU-cache KiB**, number of frames exceeding 33.334 ms, and worst frame time.
+  These cache counters **do not measure the process heap or total VRAM**.
+- Shutdown logs now record pending work before worker.stop() and job state
+  after the worker is joined. These logs are emitted once, not per frame.
+- Progress logs are throttled to one event per **20 cycles** to reduce
+  the risk of console I/O stalls.
+- A successful GitHub Actions build is **not** a real PS5 200-wave stress
+  result. The v0.5.0 PS5 screenshots validate the previous version only.
+
+### Suggested v0.6.0 hardware validation
+
+Open the gallery, press R2 and let 200/200 finish. Use X to open
+telemetry, confirm upload count **1600**, both error counts zero, and note
+slow-frame count, worst frame time, and CPU/GPU cache peaks. Screenshots
+plus runtime logs are useful for tracking longer-term reliability.

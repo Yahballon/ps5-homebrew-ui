@@ -170,7 +170,33 @@ archive-only source whitelist, consumer installer ZIP permissions.
 **Install PPSA99863 v0.5.0:**
 [SDK Consumer ZIP artifact 12562437870](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40100047639/artifacts/12562437870).
 
-The **20-round R1 stress mode is not yet console-tested**. A PASS must display
-20/20, eight READY covers, zero decode/GPU errors, and stable frame times.
-The completed CI run does not establish real-PS5 performance or long-duration
-storage/worker reliability.
+### Real PS5 v0.5.0 stress test: PASS (2026-10-24)
+
+User-provided console screenshots show the Home, Gallery and Frame Telemetry
+screens running from the archive-linked PPSA99863 v0.5.0 application.
+
+| Test or counter | Observed on console |
+| --- | --- |
+| Automated 20-cycle R1 cache stress | **STRESS 20/20 PASS** |
+| PNG gallery | 8 of 8 visible, all READY |
+| Successful image uploads | 160 |
+| Decode failures | 0 |
+| GPU upload failures | 0 |
+| Completed background jobs | 168 |
+| Background worker | RUNNING |
+| Decoded-image CPU cache | 8192 KiB / 8 images |
+| GPU image cache | 8192 KiB / 8 textures |
+| Frame count at screenshot | 691 |
+| Average frame time | 16.68 ms |
+| P99 frame time | 17.18 ms |
+| Maximum frame time | 17.30 ms |
+
+This **confirms the bounded 20-wave re-read/decode/upload loop works on an
+actual PS5**, with no reported decoding or upload errors. The observed
+rolling frame times are approximately 60 FPS and do not show a major stall
+in the displayed window.
+
+**Not yet demonstrated:** sustained multi-hour operation, heap/VRAM leak
+measurements across multiple sessions, focus-loss and OS suspend/resume
+recovery, native crash dumps, explicit EGL context reconstruction, and
+controlled Options shutdown with logs. Those remain SDK v1.0 tasks.

@@ -137,6 +137,26 @@ failure can flush them into the existing runtime log once. **These are not
 native crash dumps, signal handlers, real PS5 suspend callbacks or automatic
 EGL resource recovery.** Those remain production blockers.
 
+## v0.5.0 image cache recovery and stress diagnostics
+
+`sdk::AsyncImages::reset()` cancels abandoned handles and removes pending
+image-result references, allowing a fresh request with the same cache key
+without an old decode overwriting the UI state. It does not clear the
+underlying GPU/CPU caches: call `TextureCache::clear()` with an active
+GL context and `ImageCache::clear()` separately when a **full** reload
+is desired. Canceled jobs may still briefly exist in the shared worker
+queue but their private result data is safely discarded.
+
+`AsyncImages::statistics()` returns UI-thread counters for requests,
+successful uploads, decode failures, GPU upload failures and cancellation.
+No disk writes or locks occur during snapshot reads.
+
+`sdk::ImageStress` is a bounded testing state machine, not a production
+automatic retry system. The PPSA99863 v0.5.0 consumer uses it to run
+20 full read/decode/GPU-cache cycles when R1 is pressed in the gallery.
+Each cycle is limited to 15 seconds, and each success/failure transition
+is logged once; no per-frame storage logs are added.
+
 ## Remaining v1.0 blockers — do not misrepresent as implemented
 
 - **WebP** decoding, priority scheduling and fully integrated platform worker threads. The

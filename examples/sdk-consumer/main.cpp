@@ -43,10 +43,15 @@ constexpr std::size_t kTiles = 8;
 class Worker
 {
   public:
-    explicit Worker(hui::sdk::JobQueue &queue) : queue_(queue) {}
+    explicit Worker(hui::sdk::JobQueue &queue) : queue_(queue)
+    {
+    }
     Worker(const Worker &) = delete;
     Worker &operator=(const Worker &) = delete;
-    ~Worker() { stop(); }
+    ~Worker()
+    {
+        stop();
+    }
 
     bool start()
     {
@@ -70,7 +75,10 @@ class Worker
         started_ = false;
     }
 
-    bool running() const { return started_; }
+    bool running() const
+    {
+        return started_;
+    }
 
   private:
     static void *entry(void *opaque)
@@ -103,8 +111,8 @@ bool load_face(hui::gfx::Renderer &renderer, Face &face, const char *path)
     return face.texture != 0;
 }
 
-void label(DrawList &draw, const Face &face, std::string_view value,
-           float x, float y, float size, Color color)
+void label(DrawList &draw, const Face &face, std::string_view value, float x, float y, float size,
+           Color color)
 {
     draw.text(face.font, face.texture, value, x, y, size, color);
 }
@@ -132,21 +140,19 @@ const char *image_state(hui::sdk::ImageLoadState state)
 void draw_page(DrawList &draw, const Face &regular, const Face &bold,
                const hui::sdk::Navigator &navigation, hui::sdk::AsyncImages &images,
                const hui::sdk::ImageCache &cpu, const hui::sdk::TextureCache &gpu,
-               const hui::sdk::FrameMonitor &frames, bool worker_running,
-               std::size_t selected, std::uint64_t frame_count)
+               const hui::sdk::FrameMonitor &frames, bool worker_running, std::size_t selected,
+               std::uint64_t frame_count)
 {
     const Color foreground = Color::rgb(0xffffff);
     const Color dim = Color::rgb(0x9fb1c6);
     const Color mint = Color::rgb(0x3de3c6);
     const Color card = Color::rgb(0x132c44);
     draw.clear();
-    draw.gradient_rect({0, 0, 1920, 1080}, 0, Color::rgb(0x06101c),
-                       Color::rgb(0x11294e));
+    draw.gradient_rect({0, 0, 1920, 1080}, 0, Color::rgb(0x06101c), Color::rgb(0x11294e));
     draw.rounded_rect({72, 53, 1776, 140}, 24, card);
     draw.rounded_rect({72, 53, 13, 140}, 6, mint);
     label(draw, bold, "PS5 UI SDK  /  ARCHIVE CONSUMER", 110, 117, 42, foreground);
-    label(draw, regular, "by YAHBALLON  |  v0.3.0  |  libps5hui.a linked",
-          114, 161, 23, dim);
+    label(draw, regular, "by YAHBALLON  |  v0.3.0  |  libps5hui.a linked", 114, 161, 23, dim);
 
     const auto *route = navigation.current();
     const std::string current = route ? route->name : "home";
@@ -156,38 +162,34 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
         draw.circle(960, 450, 76, mint);
         draw.circle(960, 450, 49, card);
         label(draw, bold, "STANDALONE SDK CONSUMER", 525, 591, 51, foreground);
-        label(draw, regular, "No UI implementation sources were compiled into this app.",
-              525, 669, 28, dim);
+        label(draw, regular, "No UI implementation sources were compiled into this app.", 525, 669,
+              28, dim);
         label(draw, bold, "X  START IMAGE & NAVIGATION TEST", 530, 763, 29, mint);
     }
     else if (current == "covers")
     {
         label(draw, bold, "PNG DECODING  /  GPU CACHE", 110, 271, 37, foreground);
-        label(draw, regular, "D-Pad selects covers; Square rereads PNG; Triangle clears GPU.",
-              110, 317, 24, dim);
+        label(draw, regular, "D-Pad selects covers; Square rereads PNG; Triangle clears GPU.", 110,
+              317, 24, dim);
         for (std::size_t index = 0; index < kTiles; ++index)
         {
             const float x = 108.0f + static_cast<float>(index % 4) * 441.0f;
             const float y = 360.0f + static_cast<float>(index / 4) * 286.0f;
             const bool focus = index == selected;
-            draw.bordered_rect({x, y, 411, 254}, 24,
-                               focus ? Color::rgb(0x245269) : card,
-                               focus ? 4.0f : 1.0f,
-                               focus ? mint : Color::rgb(0x35506a));
+            draw.bordered_rect({x, y, 411, 254}, 24, focus ? Color::rgb(0x245269) : card,
+                               focus ? 4.0f : 1.0f, focus ? mint : Color::rgb(0x35506a));
             char key[32];
             std::snprintf(key, sizeof(key), "arch-%zu", index);
             const std::uint32_t texture = images.texture(key);
             if (texture)
-                draw.image(texture, {x + 13, y + 19, 189, 190},
-                           hui::gfx::kFullUv, foreground, 15);
+                draw.image(texture, {x + 13, y + 19, 189, 190}, hui::gfx::kFullUv, foreground, 15);
             else
-                draw.rounded_rect({x + 13, y + 19, 189, 190}, 17,
-                                  Color::rgb(0x29445e));
+                draw.rounded_rect({x + 13, y + 19, 189, 190}, 17, Color::rgb(0x29445e));
             char name[40];
             std::snprintf(name, sizeof(name), "IMAGE %02zu", index + 1);
             label(draw, bold, name, x + 220, y + 88, 27, foreground);
-            label(draw, regular, image_state(images.status(key)), x + 220,
-                  y + 135, 22, texture ? mint : dim);
+            label(draw, regular, image_state(images.status(key)), x + 220, y + 135, 22,
+                  texture ? mint : dim);
             if (focus)
                 label(draw, bold, "SELECTED", x + 18, y + 240, 21, mint);
         }
@@ -207,16 +209,15 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
         label(draw, regular, number, 231, 578, 31, foreground);
         std::snprintf(number, sizeof(number), "Max: %.2f ms", perf.worst_ms);
         label(draw, regular, number, 231, 637, 31, foreground);
-        std::snprintf(number, sizeof(number), "CPU: %zu KiB / %zu images",
-                      cpu.used_bytes() / 1024, cpu.entries());
+        std::snprintf(number, sizeof(number), "CPU: %zu KiB / %zu images", cpu.used_bytes() / 1024,
+                      cpu.entries());
         label(draw, regular, number, 925, 465, 28, foreground);
         std::snprintf(number, sizeof(number), "GPU: %zu KiB / %zu textures",
                       gpu.used_bytes() / 1024, gpu.entries());
         label(draw, regular, number, 925, 532, 28, foreground);
-        label(draw, regular, worker_running ? "Worker: RUNNING" : "Worker: UNAVAILABLE",
-              925, 597, 28, worker_running ? mint : dim);
-        label(draw, regular, "UI implementations: STATIC ARCHIVE", 925,
-              669, 26, mint);
+        label(draw, regular, worker_running ? "Worker: RUNNING" : "Worker: UNAVAILABLE", 925, 597,
+              28, worker_running ? mint : dim);
+        label(draw, regular, "UI implementations: STATIC ARCHIVE", 925, 669, 26, mint);
     }
     draw.rounded_rect({73, 966, 1775, 65}, 20, Color::rgb(0x102639));
     label(draw, regular,
@@ -250,11 +251,8 @@ int main()
     sdk::JobQueue queue;
     sdk::ImageCache cpu(24u * 1024u * 1024u);
     sdk::TextureCache gpu(
-        24u * 1024u * 1024u,
-        [&renderer](const sdk::Image &image) {
-            return renderer.batch().create_texture(image.width, image.height,
-                                                    image.rgba.data());
-        },
+        24u * 1024u * 1024u, [&renderer](const sdk::Image &image)
+        { return renderer.batch().create_texture(image.width, image.height, image.rgba.data()); },
         [&renderer](std::uint32_t id) { renderer.batch().destroy_texture(id); });
     sdk::AsyncImages images(queue, cpu, gpu, sdk::read_image_file);
     Worker worker(queue);
@@ -288,9 +286,8 @@ int main()
     {
         const std::int64_t now = sys::monotonic_us();
         const std::size_t samples = pad.read(std::span<PadSample>(pad_samples));
-        const auto input = controller.update(
-            std::span<const PadSample>(pad_samples, samples),
-            static_cast<std::uint64_t>(now));
+        const auto input = controller.update(std::span<const PadSample>(pad_samples, samples),
+                                             static_cast<std::uint64_t>(now));
 
         if (!input.focus_lost)
         {
@@ -352,8 +349,8 @@ int main()
         }
 
         images.pump(1);
-        draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes,
-                  worker_ok, selected, frame_count);
+        draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok, selected,
+                  frame_count);
         renderer.begin();
         renderer.draw(frame);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -382,10 +379,10 @@ int main()
         if (frame_count % 300 == 0)
         {
             const auto result = frametimes.summary();
-            sys::log("[HUI ARCHIVE CONSUMER] frames=%llu p99=%.2f avg=%.2f CPU=%zu GPU=%zu pending=%zu",
-                     static_cast<unsigned long long>(frame_count), result.p99_ms,
-                     result.average_ms, cpu.used_bytes(), gpu.used_bytes(),
-                     images.pending_count());
+            sys::log(
+                "[HUI ARCHIVE CONSUMER] frames=%llu p99=%.2f avg=%.2f CPU=%zu GPU=%zu pending=%zu",
+                static_cast<unsigned long long>(frame_count), result.p99_ms, result.average_ms,
+                cpu.used_bytes(), gpu.used_bytes(), images.pending_count());
         }
     }
 }

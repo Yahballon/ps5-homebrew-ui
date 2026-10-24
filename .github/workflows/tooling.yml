@@ -260,6 +260,55 @@ jobs:
           compression-level: 0
           retention-days: 14
 
+      # Distinct archive-only consumer: do not compile any UI implementation.
+      - name: Build archive-only SDK consumer
+        if: github.ref_type != 'tag'
+        run: make sdk-consumer
+
+      - name: Verify archive-only consumer and ZIP
+        if: github.ref_type != 'tag'
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import zipfile
+
+          ninja = pathlib.Path("build/app.ninja").read_text()
+          source_files = (
+              "examples/sdk-consumer/main.cpp",
+              "src/runtime/app_heap.c",
+              "src/runtime/runtime_shims.c",
+          )
+          for source in source_files:
+              assert source in ninja, f"Expected compiled source missing: {source}"
+          forbidden = ("src/app/", "src/gfx/", "src/core/", "src/ui/",
+                       "src/audio/", "src/sdk/", "src/platform/ps5/")
+          for source in forbidden:
+              assert source not in ninja, f"SDK implementation compiled in consumer: {source}"
+          assert "dist/sdk/lib/libps5hui.a" in ninja, "SDK archive omitted from link"
+
+          archive = pathlib.Path("dist/PPSA99863.zip")
+          assert archive.is_file()
+          with zipfile.ZipFile(archive) as package:
+              assert package.testzip() is None
+              names = package.namelist()
+              assert "PPSA99863/eboot.bin" in names
+              assert "PPSA99863/sce_sys/param.json" in names
+              assert all(name.startswith("PPSA99863/") for name in names)
+              assert all((item.external_attr >> 16) & 0o777 == 0o777
+                         for item in package.infolist())
+          print("Archive-only SDK consumer: linked, packaged and verified")
+          PY
+
+      - name: Upload archive-only SDK consumer
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.label.outputs.artifact }}-sdk-consumer
+          path: dist/PPSA99863.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
   release:
     name: GitHub release
     if: needs.build.outputs.release == 'true'

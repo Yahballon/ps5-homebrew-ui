@@ -178,6 +178,14 @@ Use `make sdk-demo` and install `dist/PPSA99862.zip`. PR/feature-branch Actions
 also publish an `-sdk-demo` artifact after full testing. See
 [the console testing guide](examples/sdk-demo/README.md).
 
+## Archive-linked independent SDK consumer
+
+`make sdk-consumer` creates `PPSA99863.zip`: a completely separate title
+that **compiles only its own main.cpp and PS5 runtime bootstrap C files**,
+then links the packaged `libps5hui.a` and public headers. See
+[examples/sdk-consumer/README.md](examples/sdk-consumer/README.md).
+The main UI Lab (`PPSA99050`) and prior SDK Lab (`PPSA99862`) are unchanged.
+
 ## Reusable SDK (experimental)
 
 The reusable `libps5hui.a` package and the portable SDK helpers can be built with

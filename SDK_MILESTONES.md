@@ -51,8 +51,11 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       CPU cache 8192 KiB / 8 images and GPU cache 8192 KiB / 8 textures.
       Reported frame sample: 1686 total frames, 16.69 ms rolling average,
       p99 17.17 ms and maximum 17.24 ms (roughly 60 Hz).
-- [ ] Standalone archive-only SDK consumer (current demo is a separately installed
-      title, but compiles UI-kit sources in the same repository).
+- [x] Add a true archive-only SDK consumer example and dedicated PPSA99863
+      build path. Compile only consumer main and minimal PS5 runtime glue; link
+      public headers and libps5hui.a, failing on unresolved SDK symbols.
+- [ ] Verify archive-only SDK consumer build, CI package and hardware execution
+      (new consumer is not validated by previous SDK Lab console screenshots).
 - [ ] Capture console logs to confirm cache invalidation and reload sequencing,
       repeat-load stress, long-running memory stability and worker shutdown; no
       console logs were attached to this validation.

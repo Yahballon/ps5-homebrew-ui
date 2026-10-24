@@ -102,15 +102,31 @@ source "$root/tools/ninja-build.sh"
 ninja_begin "$build/app.ninja"
 target_compiler=$(command -v "${PS5_CLANG:-clang-18}")
 
-mapfile -d '' -t source_paths < <(
-    find "$root/src" -type f \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' \) \
-        -print0 | sort -z
-)
+# An explicit source list lets independent consumers link the SDK binary instead
+# of recompiling the project's 300+ existing translation units.
 sources=()
-for source in "${source_paths[@]}"; do
-    sources+=("${source#"$root/"}")
-done
-(( ${#sources[@]} > 0 )) || { echo "src/ has no C or C++ sources" >&2; exit 2; }
+if [[ -n ${APP_SOURCE_FILES:-} ]]; then
+    read -r -a sources <<< "$APP_SOURCE_FILES"
+else
+    mapfile -d '' -t source_paths < <(
+        find "$root/src" -type f \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' \) \
+            -print0 | sort -z
+    )
+    for source in "${source_paths[@]}"; do
+        sources+=("${source#"$root/"}")
+    done
+fi
+(( ${#sources[@]} > 0 )) || { echo "No application source files" >&2; exit 2; }
+if [[ ${APP_SDK_ONLY:-0} == 1 ]]; then
+    # Never silently fall back to building internal UI source on this target.
+    for source in "${sources[@]}"; do
+        [[ $source == examples/sdk-consumer/*.cpp || $source == src/runtime/*.c ]] || {
+            echo "Archive consumer must compile only its own main and runtime glue: $source" >&2
+            exit 2
+        }
+    done
+    printf '==> [sdk-consumer] %s app source files; all UI symbols from archive\n' "${#sources[@]}"
+fi
 
 definitions=()
 includes=()
@@ -159,7 +175,8 @@ fi
 
 objects=()
 for source in "${sources[@]}"; do
-    [[ $source =~ ^src/[A-Za-z0-9_./-]+\.(c|cc|cpp)$ && -f $root/$source ]] || {
+    [[ $source =~ ^(src|examples/sdk-consumer)/[A-Za-z0-9_./-]+\.(c|cc|cpp)$ &&
+        $source != *..* && -f $root/$source ]] || {
         echo "invalid source: $source" >&2; exit 2;
     }
     object="$build/obj/$source.o"

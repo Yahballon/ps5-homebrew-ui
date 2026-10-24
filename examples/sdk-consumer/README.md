@@ -307,9 +307,38 @@ independent archive-only consumer linker/source whitelist/ZIP verification.
 
 [Download PPSA99863 v0.6.1 — artifact 12564858169](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40106797524/artifacts/12564858169).
 
-**Real PS5 v0.6.1 hardware validation is still pending.** Expect R2
+**User reports that v0.6.1 works on their PS5**, but no v0.6.1 diagnostic
+screenshot or console log has been supplied yet. To verify the corrected
+measurements, expect R2
 `STRESS 200/200 PASS`, `Uploads 1600`, 0 decode/GPU errors, and
 `Peak cache CPU/GPU 8192/8192 KiB` after fixing the terminal-frame
 sampling error. The Options shutdown report is visible in runtime logs,
 not the GUI; do not claim successful thread join without logs or equivalent
 instrumentation.
+
+## Where to find the logs on your PS5
+
+The archive-only consumer links the native `runtime_shims.c` which redirects
+stdout and stderr to **`/download0/hui/dev/app.log`**, *not* `/data`.
+At the beginning of the next launch, the existing `app.log` is renamed to
+`/download0/hui/dev/app.prev.log`. The source also mirrors sys::log
+messages to PS5 kernel debug output.
+
+With a PS5 FTP server running, **leave PPSA99863 open**, then browse to:
+
+```text
+/mnt/sandbox/PPSA99863_000/download0/hui/dev/app.log
+/mnt/sandbox/PPSA99863_000/download0/hui/dev/app.prev.log
+```
+
+The sandbox FTP path is exposed only while the title runs in the documented
+test setup. Copy the log before ending the title with Options. Look for
+`[HUI ARCHIVE CONSUMER] stress PASS`, `soak elapsed_ms`,
+`shutdown worker joined=1`, and `clean exit`. Because logs are inside
+the running title's sandbox, they may not be visible under `/data` from
+ordinary homebrew file explorers. Native debug output may also be captured
+using a separate klog receiver.
+
+**Logging performance note:** the current native startup shim explicitly
+sets unbuffered stdout/stderr. This produces a crash-resistant log receipt
+but can stall on slow filesystems, so don't add per-frame file logging.

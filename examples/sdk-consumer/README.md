@@ -4,7 +4,7 @@ This is the real independent SDK linking test.
 
 - **Title:** Homebrew UI SDK Consumer
 - **Title ID:** `PPSA99863`
-- **Version:** `v0.3.0`
+- **Version:** `v0.4.0` (v0.3.0 remains the verified earlier hardware baseline)
 - **Library:** `dist/sdk/lib/libps5hui.a` (produced by `make sdk`)
 - **Public headers:** `dist/sdk/include`
 - **Compiled application sources:** `examples/sdk-consumer/main.cpp`,
@@ -90,3 +90,17 @@ rolling capture (~60 Hz), not long-duration performance certification.
 Console logs were not provided; specific cache invalidation sequencing,
 fresh file reads, clean exit, error recovery and suspend/resume require
 separate evidence. The library has no stable binary ABI guarantee yet.
+
+## v0.4.0 validation focus (pending PS5 test)
+
+- The test app now uses the reusable `sdk::WorkerThread` rather than a
+  locally duplicated pthread class, and reports **processed background jobs**
+  in frame telemetry.
+- `sdk::LifecycleMonitor` tracks input interception/focus-return counts.
+  These are not real system suspend/resume events.
+- `sdk::Breadcrumbs` keeps a bounded 32-event log, emitted only if the
+  EGL swap operation fails (controlled failure path; no native crash dump).
+- `JobQueue::cancel_queued()` marks cancelled-but-unstarted work `finished`
+  when shutting down. Always cancel long-running jobs before worker.stop().
+- **Do not claim this version hardware validated until the new ZIP is booted
+  and tests repeated.** The screenshots and numbers above belong to v0.3.0.

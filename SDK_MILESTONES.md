@@ -73,9 +73,32 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       console logs were attached to this validation.
 - [ ] Verify console audio, suspend/resume, crash recovery, and broader real-game use.
 
+## 2026-10-24: SDK stability foundation, v0.4.0 consumer
+
+- [x] Add `sdk/worker_thread.hpp`: reusable owned pthread worker,
+      configurable stack/idle callback, shutdown join, restart and job count.
+- [x] Add `JobQueue::cancel_queued()`: acknowledge pending jobs as
+      cancelled/finished when a worker shuts down (separate from cancelling
+      currently running, cooperative work).
+- [x] Add `sdk/lifecycle.hpp`: input-interception/return and EGL swap
+      failure status and counters. Input interception is NOT an OS suspend event.
+- [x] Add `sdk/breadcrumbs.hpp`: fixed-size, allocation-free diagnostic ring
+      and logging of events on a controlled EGL failure.
+- [x] Add host regression tests for worker startup/shutdown/restart, queued
+      cancellation, lifecycle transitions and breadcrumb ring wraparound.
+- [x] Migrate archive-only PPSA99863 consumer to the reusable worker and
+      diagnostics; bump its app version to v0.4.0.
+- [ ] Confirm CI checks (lint, host unit/integration, archive-only native
+      link and PPSA99863 installer).
+- [ ] Verify v0.4.0 on PS5 hardware, especially cache reloading,
+      focus-interception counters, worker job count and clean exit.
+- [ ] Add true OS suspend/resume hooks, re-create lost EGL resources,
+      and native crash stack traces; these are not yet implemented.
+
 ## Production blockers, in priority order
 - [ ] WebP decode, priority queue and concrete PS5 worker ownership (bounded async image pipeline implemented).
-- [ ] OS thread management and graceful shutdown, completion/error result API.
+- [ ] Full OS lifecycle/suspend/resume and structured job errors (basic owned
+      pthread with cooperative stop and pending cancellation now implemented).
 - [ ] Full Unicode shaping, bidirectional text, locale formatting and accessibility.
 - [ ] Native crash dump/symbolication and EGL/lifecycle recovery.
 - [ ] SDK-only starter app, stable ABI, examples, CMake/PkgConfig integration.

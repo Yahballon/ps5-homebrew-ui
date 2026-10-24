@@ -5,6 +5,9 @@
 // No project implementation .cpp is built into this title. All UI, graphics,
 // controller, file and image-decoding code comes from dist/sdk/lib/libps5hui.a.
 #include "sdk/async_images.hpp"
+#include "sdk/breadcrumbs.hpp"
+#include "sdk/lifecycle.hpp"
+#include "sdk/worker_thread.hpp"
 #include "sdk/diagnostics.hpp"
 #include "sdk/navigation.hpp"
 #include "sdk/read_image_file.hpp"
@@ -19,9 +22,6 @@
 #include "platform/ps5/system.hpp"
 
 #include <GL/glcorearb.h>
-#include <pthread.h>
-
-#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -39,62 +39,6 @@ constexpr const char *kImagePath = "/app0/sce_sys/icon0.png";
 constexpr const char *kFontPath = "/app0/assets/fonts/inter-regular.huifont";
 constexpr const char *kFontBold = "/app0/assets/fonts/inter-semibold.huifont";
 constexpr std::size_t kTiles = 8;
-
-class Worker
-{
-  public:
-    explicit Worker(hui::sdk::JobQueue &queue) : queue_(queue)
-    {
-    }
-    Worker(const Worker &) = delete;
-    Worker &operator=(const Worker &) = delete;
-    ~Worker()
-    {
-        stop();
-    }
-
-    bool start()
-    {
-        pthread_attr_t attr{};
-        if (pthread_attr_init(&attr) != 0)
-            return false;
-        const int size_rc = pthread_attr_setstacksize(&attr, 512u * 1024u);
-        const int create_rc =
-            size_rc == 0 ? pthread_create(&thread_, &attr, &Worker::entry, this) : -1;
-        pthread_attr_destroy(&attr);
-        started_ = create_rc == 0;
-        return started_;
-    }
-
-    void stop()
-    {
-        if (!started_)
-            return;
-        stop_.store(true);
-        pthread_join(thread_, nullptr);
-        started_ = false;
-    }
-
-    bool running() const
-    {
-        return started_;
-    }
-
-  private:
-    static void *entry(void *opaque)
-    {
-        auto *self = static_cast<Worker *>(opaque);
-        while (!self->stop_.load())
-            if (!self->queue_.process_one())
-                hui::sys::sleep_us(3000);
-        return nullptr;
-    }
-
-    hui::sdk::JobQueue &queue_;
-    std::atomic<bool> stop_{false};
-    pthread_t thread_{};
-    bool started_ = false;
-};
 
 struct Face
 {
@@ -140,8 +84,9 @@ const char *image_state(hui::sdk::ImageLoadState state)
 void draw_page(DrawList &draw, const Face &regular, const Face &bold,
                const hui::sdk::Navigator &navigation, hui::sdk::AsyncImages &images,
                const hui::sdk::ImageCache &cpu, const hui::sdk::TextureCache &gpu,
-               const hui::sdk::FrameMonitor &frames, bool worker_running, std::size_t selected,
-               std::uint64_t frame_count)
+               const hui::sdk::FrameMonitor &frames, bool worker_running,
+               const hui::sdk::LifecycleMonitor &lifecycle, std::uint64_t processed_jobs,
+               std::size_t selected, std::uint64_t frame_count)
 {
     const Color foreground = Color::rgb(0xffffff);
     const Color dim = Color::rgb(0x9fb1c6);
@@ -152,7 +97,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
     draw.rounded_rect({72, 53, 1776, 140}, 24, card);
     draw.rounded_rect({72, 53, 13, 140}, 6, mint);
     label(draw, bold, "PS5 UI SDK  /  ARCHIVE CONSUMER", 110, 117, 42, foreground);
-    label(draw, regular, "by YAHBALLON  |  v0.3.0  |  libps5hui.a linked", 114, 161, 23, dim);
+    label(draw, regular, "by YAHBALLON  |  v0.4.0  |  libps5hui.a linked", 114, 161, 23, dim);
 
     const auto *route = navigation.current();
     const std::string current = route ? route->name : "home";
@@ -218,6 +163,12 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
         label(draw, regular, worker_running ? "Worker: RUNNING" : "Worker: UNAVAILABLE", 925, 597,
               28, worker_running ? mint : dim);
         label(draw, regular, "UI implementations: STATIC ARCHIVE", 925, 669, 26, mint);
+        std::snprintf(number, sizeof(number), "Background jobs: %llu",
+                      static_cast<unsigned long long>(processed_jobs));
+        label(draw, regular, number, 925, 728, 26, foreground);
+        std::snprintf(number, sizeof(number), "Focus losses / returns: %u / %u",
+                      lifecycle.focus_losses(), lifecycle.focus_returns());
+        label(draw, regular, number, 925, 788, 23, dim);
     }
     draw.rounded_rect({73, 966, 1775, 65}, 20, Color::rgb(0x102639));
     label(draw, regular,
@@ -231,7 +182,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
 int main()
 {
     using namespace hui;
-    sys::log("[HUI ARCHIVE CONSUMER] start v0.3.0 libps5hui.a");
+    sys::log("[HUI ARCHIVE CONSUMER] start v0.4.0 libps5hui.a");
     ps5::Display display;
     if (!display.open(1920, 1080))
     {
@@ -255,8 +206,12 @@ int main()
         { return renderer.batch().create_texture(image.width, image.height, image.rgba.data()); },
         [&renderer](std::uint32_t id) { renderer.batch().destroy_texture(id); });
     sdk::AsyncImages images(queue, cpu, gpu, sdk::read_image_file);
-    Worker worker(queue);
+    sdk::WorkerThread worker(queue, &sys::sleep_us);
     const bool worker_ok = worker.start();
+    sdk::LifecycleMonitor lifecycle;
+    sdk::Breadcrumbs breadcrumbs;
+    breadcrumbs.record(static_cast<std::uint64_t>(sys::monotonic_us()), "boot",
+                       worker_ok ? "worker running" : "worker failed");
 
     ps5::Pad pad;
     pad.open();
@@ -289,12 +244,20 @@ int main()
         const auto input = controller.update(std::span<const PadSample>(pad_samples, samples),
                                              static_cast<std::uint64_t>(now));
 
+        if (lifecycle.observe_focus(input.focus_lost))
+        {
+            breadcrumbs.record(static_cast<std::uint64_t>(now), "input",
+                               input.focus_lost ? "intercepted" : "restored");
+            sys::log("[HUI ARCHIVE CONSUMER] input focus %s",
+                     input.focus_lost ? "intercepted" : "restored");
+        }
         if (!input.focus_lost)
         {
             if (input.is_pressed(Action::menu))
             {
+                lifecycle.begin_shutdown();
+                breadcrumbs.record(static_cast<std::uint64_t>(now), "exit", "user requested");
                 images.cancel_all();
-                queue.cancel_pending();
                 worker.stop();
                 gpu.clear();
                 renderer.release();
@@ -335,6 +298,8 @@ int main()
             {
                 gpu.clear();
                 load_covers();
+                breadcrumbs.record(static_cast<std::uint64_t>(now), "cache",
+                                   "GPU cleared and requeued");
                 sys::log("[HUI ARCHIVE CONSUMER] GPU cache cleared");
             }
             if (input.is_pressed(Action::west))
@@ -344,13 +309,15 @@ int main()
                 cpu.clear();
                 gpu.clear();
                 load_covers();
+                breadcrumbs.record(static_cast<std::uint64_t>(now), "cache",
+                                   "CPU/GPU reload requested");
                 sys::log("[HUI ARCHIVE CONSUMER] cache re-request");
             }
         }
 
         images.pump(1);
-        draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok, selected,
-                  frame_count);
+        draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok,
+                  lifecycle, worker.processed_jobs(), selected, frame_count);
         renderer.begin();
         renderer.draw(frame);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -359,11 +326,19 @@ int main()
         renderer.present(0, display.width(), display.height());
         if (!display.swap())
         {
+            lifecycle.display_failed();
+            breadcrumbs.record(static_cast<std::uint64_t>(now), "display", "EGL swap failed");
             sys::log("[HUI ARCHIVE CONSUMER] EGL swap failure");
             images.cancel_all();
-            queue.cancel_pending();
             worker.stop();
-            gpu.clear();
+            for (std::size_t index = 0; index < breadcrumbs.size(); ++index)
+            {
+                const auto *event = breadcrumbs.at(index);
+                sys::log("[HUI ARCHIVE CONSUMER] breadcrumb %llu %s %s",
+                         static_cast<unsigned long long>(event->timestamp_us),
+                         event->category.data(), event->message.data());
+            }
+            gpu.context_lost();
             sys::park();
         }
         if (frame_count == 0)
@@ -380,9 +355,11 @@ int main()
         {
             const auto result = frametimes.summary();
             sys::log(
-                "[HUI ARCHIVE CONSUMER] frames=%llu p99=%.2f avg=%.2f CPU=%zu GPU=%zu pending=%zu",
+                "[HUI ARCHIVE CONSUMER] frames=%llu p99=%.2f avg=%.2f CPU=%zu GPU=%zu pending=%zu jobs=%llu focus=%u/%u",
                 static_cast<unsigned long long>(frame_count), result.p99_ms, result.average_ms,
-                cpu.used_bytes(), gpu.used_bytes(), images.pending_count());
+                cpu.used_bytes(), gpu.used_bytes(), images.pending_count(),
+                static_cast<unsigned long long>(worker.processed_jobs()),
+                lifecycle.focus_losses(), lifecycle.focus_returns());
         }
     }
 }

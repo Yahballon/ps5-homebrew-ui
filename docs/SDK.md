@@ -107,6 +107,36 @@ often need `set_root(install, "/data/homebrew/PPSA...")`. `resolve` rejects
 relative traversal but is not a filesystem sandbox: symlinks and race conditions must
 also be considered by the file-accessing application.
 
+## Worker ownership and bounded diagnostics (v0.4.0)
+
+`sdk/worker_thread.hpp` provides one owned pthread with explicit stack size,
+worker join and a platform-injected idle callback:
+
+```cpp
+hui::sdk::JobQueue queue;
+hui::sdk::WorkerThread worker(queue, &hui::sys::sleep_us,
+                              512u * 1024u /* pthread stack */);
+const bool started = worker.start();
+// JobQueue::submit() work is consumed by this thread.
+// Before closing the app or GL context:
+images.cancel_all();   // cooperative cancellation of in-flight image jobs
+worker.stop();          // acknowledge queued jobs, stop, join
+gpu.clear();            // GL context must still be valid
+```
+
+`JobQueue::cancel_queued()` marks unstarted handles cancelled and finished,
+with completion notifications for jobs submitted with
+`report_completion=true`. Running jobs are cooperative and may finish before
+`stop()` returns; avoid blocking file/network callbacks that ignore
+cancellation.
+
+`sdk/lifecycle.hpp` tracks only *observed controller interception* and
+*render swap failure*, and `sdk/breadcrumbs.hpp` keeps the latest 32 debug
+events in a bounded ring without per-frame file I/O. A normal controlled
+failure can flush them into the existing runtime log once. **These are not
+native crash dumps, signal handlers, real PS5 suspend callbacks or automatic
+EGL resource recovery.** Those remain production blockers.
+
 ## Remaining v1.0 blockers — do not misrepresent as implemented
 
 - **WebP** decoding, priority scheduling and fully integrated platform worker threads. The
@@ -117,8 +147,9 @@ also be considered by the file-accessing application.
   through explicit GL callbacks. `GlBatch::destroy_texture` now releases image textures; callers
   must not draw texture handles after eviction. The cache must be cleared
   *before* destroying the GL context.
-- A production OS thread pool with shutdown/join ownership, cancellation on lifecycle
-  transitions, and priority queues.
+- A production multi-worker pool with priority queues, structured errors and
+  full cancellation on real OS lifecycle transitions. A simple owned pthread
+  worker and join/cancel of *queued* work now exist.
 - Complete multilingual shaping / bidirectional text (dictionary substitution is **not**
   font shaping or pluralization), locale number/date formats, and OS accessibility hooks.
 - Signal-safe native crash dumps and symbolication, robust suspend/resume/system overlays,

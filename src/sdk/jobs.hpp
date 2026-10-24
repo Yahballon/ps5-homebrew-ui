@@ -143,6 +143,24 @@ class JobQueue
             job.state->cancelled.store(true);
     }
 
+    // Mark unstarted jobs cancelled AND finished during thread shutdown.
+    // Running jobs must still honour their cooperative cancellation tokens.
+    std::size_t cancel_queued()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        const auto count = pending_.size();
+        while (!pending_.empty())
+        {
+            auto job = std::move(pending_.front());
+            pending_.pop_front();
+            job.state->cancelled.store(true);
+            job.state->finished.store(true);
+            if (job.report_completion)
+                completed_.push_back(Handle(job.state));
+        }
+        return count;
+    }
+
     std::size_t pending_count() const
     {
         std::lock_guard<std::mutex> lock(mutex_);

@@ -110,7 +110,8 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
                const hui::sdk::FrameMonitor &frames, bool worker_running,
                const hui::sdk::LifecycleMonitor &lifecycle, const hui::sdk::ImageStress &stress,
                const hui::sdk::SoakMonitor &soak, const RestartStatus &restart,
-               const ShutdownReceipt &receipt, std::uint64_t processed_jobs, std::size_t selected, std::uint64_t frame_count)
+               const ShutdownReceipt &receipt, std::uint64_t processed_jobs, std::size_t selected,
+               std::uint64_t frame_count)
 {
     const Color foreground = Color::rgb(0xffffff);
     const Color dim = Color::rgb(0x9fb1c6);
@@ -204,10 +205,10 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
         label(draw, bold, "SDK LINK & FRAME TELEMETRY", 210, 373, 42, foreground);
         char recovery_text[160];
         std::snprintf(recovery_text, sizeof(recovery_text),
-                      "GL restart: %u/%u OK  last=%s  %.1f ms",
-                      restart.successful, restart.attempts,
-                      restart.attempts == 0 ? "NOT TESTED" :
-                      hui::sdk::context_restart_stage_name(restart.last),
+                      "GL restart: %u/%u OK  last=%s  %.1f ms", restart.successful,
+                      restart.attempts,
+                      restart.attempts == 0 ? "NOT TESTED"
+                                            : hui::sdk::context_restart_stage_name(restart.last),
                       static_cast<double>(restart.last_duration_us) / 1000.0);
         label(draw, regular, recovery_text, 815, 295, 22,
               restart.successful == restart.attempts ? mint : Color::rgb(0xff7e8b));
@@ -409,10 +410,11 @@ int main()
                               soak.peak_cpu_bytes() / 1024, soak.peak_gpu_bytes() / 1024);
                 report += line;
                 std::snprintf(line, sizeof(line),
-                              "gl.restart_attempts=%u\ngl.restart_success=%u\ngl.restart_last=%s\ngl.restart_duration_us=%llu\n",
+                              "gl.restart_attempts=%u\ngl.restart_success=%u\ngl.restart_last=%"
+                              "s\ngl.restart_duration_us=%llu\n",
                               restart.attempts, restart.successful,
-                              restart.attempts == 0 ? "not_tested" :
-                                  sdk::context_restart_stage_name(restart.last),
+                              restart.attempts == 0 ? "not_tested"
+                                                    : sdk::context_restart_stage_name(restart.last),
                               static_cast<unsigned long long>(restart.last_duration_us));
                 report += line;
                 for (std::size_t i = 0; i < breadcrumbs.size(); ++i)
@@ -483,12 +485,9 @@ int main()
                         regular.texture = 0;
                         bold.texture = 0;
                     },
-                    [&]() { renderer.release(); },
-                    [&]() { display.close(); },
-                    [&]() { return display.open(1920, 1080); },
-                    [&]() { return renderer.init(); },
-                    [&]()
-                    {
+                    [&]() { renderer.release(); }, [&]() { display.close(); },
+                    [&]() { return display.open(1920, 1080); }, [&]() { return renderer.init(); },
+                    [&]() {
                         return load_face(renderer, regular, kFontPath) &&
                                load_face(renderer, bold, kFontBold);
                     },
@@ -520,16 +519,13 @@ int main()
                                   "PS5 UI SDK Consumer v0.7.0 GL restart failure\n"
                                   "stage=%s\nworker.joined=%d\nattempts=%u\nsuccess=%u\n",
                                   sdk::context_restart_stage_name(outcome.stage),
-                                  stopped.joined ? 1 : 0,
-                                  restart.attempts, restart.successful);
+                                  stopped.joined ? 1 : 0, restart.attempts, restart.successful);
                     const auto saved = sdk::export_diagnostics(
-                        failure,
-                        [](const std::string &dir) { return save::ensure_directory(dir); },
+                        failure, [](const std::string &dir) { return save::ensure_directory(dir); },
                         [](const std::string &file, std::string_view data)
                         { return save::write_atomic(file, data); });
                     sys::log("[HUI ARCHIVE CONSUMER] GL restart FAIL stage=%s saved=%d",
-                             sdk::context_restart_stage_name(outcome.stage),
-                             saved.saved ? 1 : 0);
+                             sdk::context_restart_stage_name(outcome.stage), saved.saved ? 1 : 0);
                     sys::park();
                 }
             }

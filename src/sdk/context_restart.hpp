@@ -29,9 +29,8 @@ struct ContextRestartResult
 // callbacks run on the rendering thread. Never use for an already-lost
 // context: glDelete* and release_renderer need the old context to be valid.
 // The worker may keep decoding but cannot access any GL context.
-template <typename ClearGpu, typename ReleaseRenderer, typename CloseDisplay,
-          typename OpenDisplay, typename InitializeRenderer, typename RestoreFonts,
-          typename RequestImages>
+template <typename ClearGpu, typename ReleaseRenderer, typename CloseDisplay, typename OpenDisplay,
+          typename InitializeRenderer, typename RestoreFonts, typename RequestImages>
 ContextRestartResult restart_context(ClearGpu clear_gpu, ReleaseRenderer release_renderer,
                                      CloseDisplay close_display, OpenDisplay open_display,
                                      InitializeRenderer initialize_renderer,

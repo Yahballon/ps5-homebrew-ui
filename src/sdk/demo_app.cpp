@@ -103,7 +103,7 @@ bool load_font(hui::gfx::Renderer &renderer, const char *path, hui::gfx::Font &f
     return output.texture != 0;
 }
 
-void txt(hui::gfx::DrawList &draw, const hui::ui::FontRef &face, const std::string &value, float x,
+void emit(hui::gfx::DrawList &draw, const hui::ui::FontRef &face, const std::string &value, float x,
           float baseline, float size, Color tint = Color::rgb(0xe8f2ff))
 {
     hui::ui::text(draw, face, value, x, baseline, size, tint);
@@ -143,8 +143,8 @@ void draw_screen(hui::gfx::DrawList &draw, const hui::ui::FontRef &regular,
     draw.gradient_rect({0, 0, 1920, 1080}, 0, background, Color::rgb(0x122849));
     draw.rounded_rect({65, 60, 1790, 125}, 28, Color::rgb(0x112e44));
     draw.rounded_rect({65, 60, 14, 125}, 7, accent);
-    txt(draw, bold, "PS5 HOME BREW UI  /  SDK LAB", 115, 119, 43);
-    txt(draw, regular, "by YAHBALLON   |   SDK DEMO v0.2.0", 118, 159, 22, muted);
+    emit(draw, bold, "PS5 HOME BREW UI  /  SDK LAB", 115, 119, 43);
+    emit(draw, regular, "by YAHBALLON   |   SDK DEMO v0.2.0", 118, 159, 22, muted);
 
     const auto *route = model.pages().current();
     const std::string page = route == nullptr ? "home" : route->name;
@@ -153,15 +153,15 @@ void draw_screen(hui::gfx::DrawList &draw, const hui::ui::FontRef &regular,
         draw.rounded_rect({170, 290, 1580, 520}, 36, panel);
         draw.circle(960, 423, 66, accent);
         draw.circle(960, 423, 42, Color::rgb(0x10273a));
-        txt(draw, bold, "SDK INTEGRATION TEST", 635, 565, 52);
-        txt(draw, regular, "Screen router  +  native worker  +  PNG decode  +  GPU LRU cache", 455,
+        emit(draw, bold, "SDK INTEGRATION TEST", 635, 565, 52);
+        emit(draw, regular, "Screen router  +  native worker  +  PNG decode  +  GPU LRU cache", 455,
              635, 28, muted);
-        txt(draw, bold, "PRESS X TO OPEN THE LIVE COVER GALLERY", 470, 750, 31, accent);
+        emit(draw, bold, "PRESS X TO OPEN THE LIVE COVER GALLERY", 470, 750, 31, accent);
     }
     else if (page == "gallery")
     {
-        txt(draw, bold, "ASYNC IMAGE GALLERY", 95, 250, 39);
-        txt(draw, regular, "Use D-Pad to select a cover. X opens details.", 98, 300, 25, muted);
+        emit(draw, bold, "ASYNC IMAGE GALLERY", 95, 250, 39);
+        emit(draw, regular, "Use D-Pad to select a cover. X opens details.", 98, 300, 25, muted);
         for (std::size_t index = 0; index < hui::sdk::DemoModel::kCovers; ++index)
         {
             const float x = 92.0f + static_cast<float>(index % 4) * 455.0f;
@@ -179,12 +179,12 @@ void draw_screen(hui::gfx::DrawList &draw, const hui::ui::FontRef &regular,
                 draw.rounded_rect({x + 18, y + 18, 179, 179}, 18, Color::rgb(0x294255));
             char label[40];
             std::snprintf(label, sizeof(label), "COVER %02zu", index + 1);
-            txt(draw, bold, label, x + 219, y + 82, 28);
-            txt(draw, regular, state_label(images.status(key)), x + 219, y + 125, 20,
+            emit(draw, bold, label, x + 219, y + 82, 28);
+            emit(draw, regular, state_label(images.status(key)), x + 219, y + 125, 20,
                  texture ? accent : muted);
-            txt(draw, regular, "PNG / IO worker", x + 219, y + 160, 18, muted);
+            emit(draw, regular, "PNG / IO worker", x + 219, y + 160, 18, muted);
             if (selected)
-                txt(draw, bold, "SELECTED", x + 20, y + 246, 24, accent);
+                emit(draw, bold, "SELECTED", x + 20, y + 246, 24, accent);
         }
     }
     else if (page == "detail")
@@ -194,52 +194,52 @@ void draw_screen(hui::gfx::DrawList &draw, const hui::ui::FontRef &regular,
         std::snprintf(key, sizeof(key), "cover-%zu", chosen);
         char heading[60];
         std::snprintf(heading, sizeof(heading), "COVER %02zu  /  DETAIL VIEW", chosen + 1);
-        txt(draw, bold, heading, 95, 268, 40);
+        emit(draw, bold, heading, 95, 268, 40);
         draw.rounded_rect({105, 310, 695, 620}, 35, panel);
         const auto texture = images.texture(key);
         if (texture != 0)
             draw.image(texture, {166, 367, 576, 515}, hui::gfx::kFullUv, Color::rgb(0xffffff), 30);
         else
-            txt(draw, regular, "Waiting for texture", 220, 575, 31, muted);
+            emit(draw, regular, "Waiting for texture", 220, 575, 31, muted);
         draw.rounded_rect({850, 310, 950, 620}, 35, panel);
-        txt(draw, bold, "IMAGE PIPELINE", 910, 390, 37);
-        txt(draw, regular, std::string("State: ") + state_label(images.status(key)), 912, 480, 29,
+        emit(draw, bold, "IMAGE PIPELINE", 910, 390, 37);
+        emit(draw, regular, std::string("State: ") + state_label(images.status(key)), 912, 480, 29,
              accent);
-        txt(draw, regular, "Loaded by pthread worker", 912, 548, 27);
-        txt(draw, regular, "Decoded to CPU RGBA8", 912, 598, 27);
-        txt(draw, regular, "Uploaded on GL render thread", 912, 648, 27);
-        txt(draw, bold, "X   Open frame diagnostics", 912, 780, 29, accent);
+        emit(draw, regular, "Loaded by pthread worker", 912, 548, 27);
+        emit(draw, regular, "Decoded to CPU RGBA8", 912, 598, 27);
+        emit(draw, regular, "Uploaded on GL render thread", 912, 648, 27);
+        emit(draw, bold, "X   Open frame diagnostics", 912, 780, 29, accent);
     }
     else
     {
         const auto report = monitor.summary();
         char line[128];
         draw.rounded_rect({160, 287, 1600, 645}, 36, panel);
-        txt(draw, bold, "FRAME DIAGNOSTICS", 226, 380, 46);
+        emit(draw, bold, "FRAME DIAGNOSTICS", 226, 380, 46);
         std::snprintf(line, sizeof(line), "FRAMES  %llu", static_cast<unsigned long long>(frames));
-        txt(draw, regular, line, 245, 463, 33, accent);
+        emit(draw, regular, line, 245, 463, 33, accent);
         std::snprintf(line, sizeof(line), "AVG      %.2f ms", report.average_ms);
-        txt(draw, regular, line, 245, 531, 33);
+        emit(draw, regular, line, 245, 531, 33);
         std::snprintf(line, sizeof(line), "P99      %.2f ms", report.p99_ms);
-        txt(draw, regular, line, 245, 599, 33);
+        emit(draw, regular, line, 245, 599, 33);
         std::snprintf(line, sizeof(line), "MAX      %.2f ms", report.worst_ms);
-        txt(draw, regular, line, 245, 667, 33);
+        emit(draw, regular, line, 245, 667, 33);
         std::snprintf(line, sizeof(line), "RAM CPU IMAGE CACHE    %zu KiB / %zu images",
                       cpu.used_bytes() / 1024, cpu.entries());
-        txt(draw, regular, line, 910, 489, 27);
+        emit(draw, regular, line, 910, 489, 27);
         std::snprintf(line, sizeof(line), "GPU IMAGE CACHE        %zu KiB / %zu textures",
                       gpu.used_bytes() / 1024, gpu.entries());
-        txt(draw, regular, line, 910, 567, 27);
+        emit(draw, regular, line, 910, 567, 27);
         std::snprintf(line, sizeof(line), "WORKER                  %s",
                       worker_running ? "RUNNING" : "FAILED");
-        txt(draw, regular, line, 910, 646, 27);
+        emit(draw, regular, line, 910, 646, 27);
         std::snprintf(line, sizeof(line), "FRAMES >16.7ms         %zu / %zu", report.over_budget,
                       report.samples);
-        txt(draw, regular, line, 910, 730, 27);
+        emit(draw, regular, line, 910, 730, 27);
     }
 
     draw.rounded_rect({65, 960, 1790, 66}, 20, Color::rgb(0x10283b));
-    txt(draw, regular,
+    emit(draw, regular,
          "X  OPEN / NEXT     O  BACK     D-PAD  SELECT     SQUARE  RELOAD     "
          "TRIANGLE  CLEAR GPU     OPTIONS  EXIT",
          110, 1002, 22, muted);

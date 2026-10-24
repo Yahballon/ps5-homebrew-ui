@@ -90,8 +90,10 @@ in the worker. It uses the queue's *unreported completion* mode, so its many
 jobs do not fill the shared completion-deque; other applications can still use
 `JobQueue::take_completed()` for their own jobs. Use `cancel_all()` before
 shutting down the workers, then join them before destructing the queue. The
-GPU cache may evict textures once its budget is reached, so draw only handles
-retrieved **this frame**, not stale stored texture IDs.
+GPU cache may evict textures once its budget is reached. Re-requests of a cover
+cached in RAM are queued for a capped UI-thread re-upload, not uploaded during
+`request()`. Draw only texture handles retrieved **this frame**, not stale
+stored texture IDs.
 
 ### Runtime storage
 

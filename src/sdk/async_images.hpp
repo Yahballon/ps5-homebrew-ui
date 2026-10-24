@@ -60,16 +60,14 @@ class AsyncImages
             states_[key] = ImageLoadState::ready;
             return true;
         }
-        if (auto cached = cpu_.find(key))
-        {
-            if (gpu_.get_or_upload(key, *cached))
-            {
-                states_[key] = ImageLoadState::ready;
-                return true;
-            }
-        }
         if (states_[key] == ImageLoadState::loading)
             return false;
+        if (auto cached = cpu_.find(key))
+        {
+            ready_.push_back({key, std::move(cached)});
+            states_[key] = ImageLoadState::loading;
+            return true;
+        }
         auto result = std::make_shared<PendingResult>();
         auto handle = jobs_.submit(
             [read = read_, path = std::move(path), result, max_bytes = max_encoded_,
@@ -93,6 +91,16 @@ class AsyncImages
     std::size_t pump(std::size_t max_uploads = 2)
     {
         std::size_t uploaded = 0;
+        std::size_t attempts = 0;
+        for (auto it = ready_.begin(); it != ready_.end() && attempts < max_uploads;)
+        {
+            const auto texture = gpu_.get_or_upload(it->key, *it->image);
+            states_[it->key] = texture ? ImageLoadState::ready : ImageLoadState::failed;
+            ++attempts;
+            if (texture)
+                ++uploaded;
+            it = ready_.erase(it);
+        }
         for (auto it = pending_.begin(); it != pending_.end();)
         {
             if (!it->handle.finished())
@@ -108,7 +116,7 @@ class AsyncImages
             {
                 states_[it->key] = ImageLoadState::failed;
             }
-            else if (uploaded >= max_uploads)
+            else if (attempts >= max_uploads)
             {
                 ++it;
                 continue;
@@ -117,6 +125,7 @@ class AsyncImages
             {
                 auto &decoded = *it->result->image;
                 const auto texture = gpu_.get_or_upload(it->key, decoded);
+                ++attempts;
                 cpu_.insert(it->key, std::move(decoded));
                 states_[it->key] = texture ? ImageLoadState::ready : ImageLoadState::failed;
                 if (texture)
@@ -146,9 +155,12 @@ class AsyncImages
     {
         for (auto &pending : pending_)
             pending.handle.cancel();
+        for (const auto &pending : ready_)
+            states_[pending.key] = ImageLoadState::cancelled;
+        ready_.clear();
     }
 
-    std::size_t pending_count() const { return pending_.size(); }
+    std::size_t pending_count() const { return pending_.size() + ready_.size(); }
 
   private:
     struct PendingResult
@@ -163,6 +175,12 @@ class AsyncImages
         std::shared_ptr<PendingResult> result;
     };
 
+    struct Ready
+    {
+        std::string key;
+        std::shared_ptr<const Image> image;
+    };
+
     JobQueue &jobs_;
     ImageCache &cpu_;
     TextureCache &gpu_;
@@ -170,6 +188,7 @@ class AsyncImages
     std::size_t max_encoded_;
     std::size_t max_pixels_;
     std::vector<Pending> pending_;
+    std::vector<Ready> ready_;
     std::unordered_map<std::string, ImageLoadState> states_;
 };
 

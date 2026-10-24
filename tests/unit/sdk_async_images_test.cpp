@@ -53,6 +53,33 @@ TEST(SdkAsyncImages, LoadsInWorkerAndUploadsOnlyOnPump)
     EXPECT_EQ(loader.pending_count(), 0u);
 }
 
+TEST(SdkAsyncImages, CachedCoversReuploadOnlyDuringPump)
+{
+    hui::sdk::JobQueue jobs;
+    hui::sdk::ImageCache cpu(4096);
+    std::uint32_t next_id = 2;
+    hui::sdk::TextureCache gpu(
+        4096,
+        [&next_id](const hui::sdk::Image &) { return ++next_id; },
+        [](std::uint32_t) {});
+    hui::sdk::AsyncImages loader(
+        jobs, cpu, gpu,
+        [](const std::string &, std::size_t) {
+            return std::vector<std::uint8_t>(kPng.begin(), kPng.end());
+        });
+    ASSERT_TRUE(loader.request("cover", "path"));
+    ASSERT_TRUE(jobs.process_one());
+    ASSERT_EQ(loader.pump(), 1u);
+    EXPECT_EQ(next_id, 3u);
+    ASSERT_TRUE(gpu.erase("cover"));
+    ASSERT_TRUE(loader.request("cover", "path"));
+    EXPECT_EQ(next_id, 3u); // no synchronous GL uploads in request()
+    EXPECT_EQ(loader.pump(0), 0u);
+    EXPECT_EQ(next_id, 3u);
+    EXPECT_EQ(loader.pump(1), 1u);
+    EXPECT_EQ(next_id, 4u);
+}
+
 TEST(SdkAsyncImages, CancelsWithoutDecoding)
 {
     hui::sdk::JobQueue jobs;

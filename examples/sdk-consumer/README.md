@@ -104,3 +104,18 @@ separate evidence. The library has no stable binary ABI guarantee yet.
   when shutting down. Always cancel long-running jobs before worker.stop().
 - **Do not claim this version hardware validated until the new ZIP is booted
   and tests repeated.** The screenshots and numbers above belong to v0.3.0.
+
+## v0.4.0 GitHub CI result (2026-10-24)
+
+GitHub Actions run [40098174696](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40098174696)
+**PASS** at commit `c066c3107f513f7ab48c1987394b0c2de48218e8`:
+format/lint, host unit + integration tests, original PS5 app, SDK archive,
+SDK Lab demo, archive-only consumer PS5 cross-link and ZIP structure/permissions.
+
+[Download v0.4.0 PPSA99863 installer (artifact 12561971440)](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40098174696/artifacts/12561971440).
+
+**No v0.4.0 PS5 hardware run has been claimed.** The old 16.68 ms/17.01 ms
+P99 numbers came from the v0.3.0 hardware test. For v0.4.0, verify all eight
+covers still reach READY, open frame telemetry and check processed job count,
+and test Square, Triangle, Back and Options. Report any failure or screenshot
+for the next SDK milestone.

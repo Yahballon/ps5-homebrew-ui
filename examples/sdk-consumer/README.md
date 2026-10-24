@@ -293,3 +293,23 @@ On console, launch PPSA99863 v0.6.1, press R2 in Gallery and look for
 `STRESS 200/200 PASS`, 1600 uploads, zero errors and cache peaks of at
 least **8192 KiB**. Capture telemetry. Options tests shutdown; an actual
 worker-joined log is the only proof of that final shutdown path.
+
+## v0.6.1 CI receipt — 2026-10-24
+
+The production-style cross-build was successful on
+[GitHub Actions run 40106797524](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40106797524),
+source commit `7dd9c5e88e25310ab67be4902447ebf6e9d63e07`.
+
+Passed checks: source formatting/lint, host GoogleTest (including final
+cache-sampling and worker-stop report regressions), host integration tests,
+PS5 cross-build, reusable SDK static archive, original SDK Lab and
+independent archive-only consumer linker/source whitelist/ZIP verification.
+
+[Download PPSA99863 v0.6.1 — artifact 12564858169](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40106797524/artifacts/12564858169).
+
+**Real PS5 v0.6.1 hardware validation is still pending.** Expect R2
+`STRESS 200/200 PASS`, `Uploads 1600`, 0 decode/GPU errors, and
+`Peak cache CPU/GPU 8192/8192 KiB` after fixing the terminal-frame
+sampling error. The Options shutdown report is visible in runtime logs,
+not the GUI; do not claim successful thread join without logs or equivalent
+instrumentation.

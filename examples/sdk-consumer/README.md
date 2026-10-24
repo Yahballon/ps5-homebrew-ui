@@ -461,3 +461,24 @@ more times, then press Options and photograph the receipt. The exported
 `eglTerminate`→`eglInitialize` test. Not previously exercised on console.
 A native driver restart may hang or fail even if the build passes CI.
 Real EGL_CONTEXT_LOST handling remains a separate production milestone.
+
+## v0.7.0 GitHub CI receipt (2026-10-25)
+
+The new controlled-context-restart code has passed the full cross-build and
+native SDK consumer packaging checks:
+[GitHub Actions run 40144460198](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40144460198),
+commit `82c07a7a9cdb27c6da9269abf86c48660b692735`.
+
+All successful: source lint/formatting, host GoogleTest unit tests including
+ordered GL shutdown/restore and error paths, host integration tests, PS5
+cross-build, reusable SDK archive, SDK Lab, independent consumer native
+link, source whitelist, and ZIP permissions validation.
+
+**[Download PPSA99863 v0.7.0 (artifact 12579803675)](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40144460198/artifacts/12579803675)**
+
+**Real PS5 hardware validation has not yet happened for v0.7.0.**
+Test L1 once and then verify the same eight covers return to READY,
+the frame telemetry shows `GL restart 1/1 OK`, and the Options
+`shutdown.txt` receipt contains `gl.restart_success=1`. If the
+native EGL driver fails to reinitialize, the app saves a controlled
+failure receipt and parks to avoid invalid GL use.

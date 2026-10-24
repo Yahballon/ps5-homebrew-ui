@@ -1,0 +1,39 @@
+# ps5-homebrew-ui - Portable SDK quick build without proprietary or PS5 toolchains.
+# Copyright (C) 2026 BlackBearReloaded
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: SDK smoke
+
+on:
+  push:
+    branches:
+      - "feature/ui-sdk-*"
+  pull_request:
+    paths:
+      - "src/sdk/**"
+      - "src/third_party/stb/**"
+      - "src/core/save_file.hpp"
+      - "tests/sdk_smoke.cpp"
+      - ".github/workflows/sdk-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  portable-sdk:
+    name: Compile and run portable SDK checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4+ pinned
+      - name: Compile third-party decoder
+        run: |
+          clang -std=c11 -O1 -I src -c src/third_party/stb/image.c -o /tmp/hui-stb-image.o
+      - name: Compile and run portable SDK
+        run: |
+          clang++ -std=c++20 -O1 -Wall -Wextra -Wpedantic -Werror -pthread -I src \
+            tests/sdk_smoke.cpp src/sdk/image_decode.cpp /tmp/hui-stb-image.o \
+            -o /tmp/hui-sdk-smoke
+          /tmp/hui-sdk-smoke

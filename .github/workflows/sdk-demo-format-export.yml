@@ -1,0 +1,38 @@
+# ps5-homebrew-ui - Temporary read-only formatting export for SDK demo sources.
+# Copyright (C) 2026 BlackBearReloaded
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: SDK demo format export
+on:
+  push:
+    branches: ['feature/ui-sdk-*']
+permissions:
+  contents: read
+jobs:
+  formatter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # pinned
+      - name: Install formatter
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y clang-format-18
+      - name: Format SDK demo
+        run: |
+          clang-format-18 -i src/sdk/demo_model.hpp src/sdk/demo_app.cpp tests/unit/sdk_demo_model_test.cpp src/main.cpp
+          git diff --stat
+      - name: Export formatted sources to log
+        run: |
+          python3 - <<'PY'
+          import base64
+          import pathlib
+          import subprocess
+          files = subprocess.check_output(["git", "diff", "--name-only"], text=True).splitlines()
+          for name in files:
+              data = base64.b64encode(pathlib.Path(name).read_bytes()).decode("ascii")
+              for i, start in enumerate(range(0, len(data), 1500)):
+                  print(f"HUIFMT|{name}|{i}|{data[start:start + 1500]}", flush=True)
+              print(f"HUIEND|{name}|{len(data)}", flush=True)
+          print(f"HUIFILES={len(files)}", flush=True)
+          PY

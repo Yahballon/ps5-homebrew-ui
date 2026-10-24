@@ -30,8 +30,8 @@ class SoakMonitor
         worst_frame_ms_ = 0.0f;
     }
 
-    void observe(std::uint64_t timestamp_us, std::size_t cpu_bytes,
-                 std::size_t gpu_bytes, std::size_t pending, float frame_ms)
+    void observe(std::uint64_t timestamp_us, std::size_t cpu_bytes, std::size_t gpu_bytes,
+                 std::size_t pending, float frame_ms)
     {
         if (!active_)
             return;
@@ -59,15 +59,42 @@ class SoakMonitor
         finished_ = true;
     }
 
-    bool active() const { return active_; }
-    bool finished() const { return finished_; }
-    std::uint64_t elapsed_ms() const { return elapsed_us_ / 1000u; }
-    std::uint64_t frames() const { return frames_; }
-    std::uint64_t slow_frames() const { return slow_frames_; }
-    std::size_t peak_cpu_bytes() const { return cpu_peak_; }
-    std::size_t peak_gpu_bytes() const { return gpu_peak_; }
-    std::size_t peak_pending() const { return pending_peak_; }
-    float worst_frame_ms() const { return worst_frame_ms_; }
+    bool active() const
+    {
+        return active_;
+    }
+    bool finished() const
+    {
+        return finished_;
+    }
+    std::uint64_t elapsed_ms() const
+    {
+        return elapsed_us_ / 1000u;
+    }
+    std::uint64_t frames() const
+    {
+        return frames_;
+    }
+    std::uint64_t slow_frames() const
+    {
+        return slow_frames_;
+    }
+    std::size_t peak_cpu_bytes() const
+    {
+        return cpu_peak_;
+    }
+    std::size_t peak_gpu_bytes() const
+    {
+        return gpu_peak_;
+    }
+    std::size_t peak_pending() const
+    {
+        return pending_peak_;
+    }
+    float worst_frame_ms() const
+    {
+        return worst_frame_ms_;
+    }
 
   private:
     std::uint64_t started_us_ = 0;

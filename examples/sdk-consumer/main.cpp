@@ -199,8 +199,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
                       soak.peak_cpu_bytes() / 1024u, soak.peak_gpu_bytes() / 1024u);
         label(draw, regular, number, 225, 845, 21, dim);
         std::snprintf(number, sizeof(number), "Slow frames (>33ms) %llu   Worst %.2f ms",
-                      static_cast<unsigned long long>(soak.slow_frames()),
-                      soak.worst_frame_ms());
+                      static_cast<unsigned long long>(soak.slow_frames()), soak.worst_frame_ms());
         label(draw, regular, number, 925, 846, 21, dim);
     }
     draw.rounded_rect({73, 966, 1775, 65}, 20, Color::rgb(0x102639));
@@ -305,7 +304,8 @@ int main()
                          images.pending_count(),
                          static_cast<unsigned long long>(worker.processed_jobs()));
                 worker.stop();
-                sys::log("[HUI ARCHIVE CONSUMER] shutdown worker joined pending_queue=%zu processed=%llu",
+                sys::log("[HUI ARCHIVE CONSUMER] shutdown worker joined pending_queue=%zu "
+                         "processed=%llu",
                          queue.pending_count(),
                          static_cast<unsigned long long>(worker.processed_jobs()));
                 gpu.clear();
@@ -363,17 +363,16 @@ int main()
                                    "CPU/GPU reload requested");
                 sys::log("[HUI ARCHIVE CONSUMER] cache re-request");
             }
-            if ((input.is_pressed(Action::page_next) ||
-                 input.is_pressed(Action::jump_next)) && worker_ok)
+            if ((input.is_pressed(Action::page_next) || input.is_pressed(Action::jump_next)) &&
+                worker_ok)
             {
-                const std::uint32_t rounds =
-                    input.is_pressed(Action::jump_next) ? 200u : 20u;
+                const std::uint32_t rounds = input.is_pressed(Action::jump_next) ? 200u : 20u;
                 if (stress.running())
                 {
                     stress.cancel();
                     soak.finish(static_cast<std::uint64_t>(now));
-                    sys::log("[HUI ARCHIVE CONSUMER] stress cancelled at %u/%u",
-                             stress.completed(), stress.target());
+                    sys::log("[HUI ARCHIVE CONSUMER] stress cancelled at %u/%u", stress.completed(),
+                             stress.target());
                 }
                 else if (stress.start(rounds, static_cast<std::uint64_t>(now)))
                 {
@@ -406,17 +405,17 @@ int main()
                 reload_all();
                 // Avoid console filesystem stalls from one log entry per wave.
                 if (stress.completed() % 20u == 0u)
-                    sys::log("[HUI ARCHIVE CONSUMER] stress progress %u/%u",
-                             stress.completed(), stress.target());
+                    sys::log("[HUI ARCHIVE CONSUMER] stress progress %u/%u", stress.completed(),
+                             stress.target());
             }
             else if (event == sdk::StressEvent::completed || event == sdk::StressEvent::failed)
             {
                 const auto &stats = images.statistics();
                 soak.finish(static_cast<std::uint64_t>(now));
-                sys::log("[HUI ARCHIVE CONSUMER] soak elapsed_ms=%llu peak_cpu=%zu peak_gpu=%zu slow_frames=%llu worst_ms=%.2f",
-                         static_cast<unsigned long long>(soak.elapsed_ms()),
-                         soak.peak_cpu_bytes(), soak.peak_gpu_bytes(),
-                         static_cast<unsigned long long>(soak.slow_frames()),
+                sys::log("[HUI ARCHIVE CONSUMER] soak elapsed_ms=%llu peak_cpu=%zu peak_gpu=%zu "
+                         "slow_frames=%llu worst_ms=%.2f",
+                         static_cast<unsigned long long>(soak.elapsed_ms()), soak.peak_cpu_bytes(),
+                         soak.peak_gpu_bytes(), static_cast<unsigned long long>(soak.slow_frames()),
                          soak.worst_frame_ms());
                 sys::log("[HUI ARCHIVE CONSUMER] stress %s %u/%u uploads=%llu decode_errors=%llu "
                          "gpu_errors=%llu",
@@ -462,8 +461,8 @@ int main()
         const auto time = sys::monotonic_us();
         const float delta_ms = static_cast<float>(time - previous) / 1000.0f;
         frametimes.record(delta_ms);
-        soak.observe(static_cast<std::uint64_t>(time), cpu.used_bytes(),
-                     gpu.used_bytes(), images.pending_count(), delta_ms);
+        soak.observe(static_cast<std::uint64_t>(time), cpu.used_bytes(), gpu.used_bytes(),
+                     images.pending_count(), delta_ms);
         previous = time;
         ++frame_count;
         if (frame_count % 300 == 0)

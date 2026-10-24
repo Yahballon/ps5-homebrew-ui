@@ -1,0 +1,50 @@
+# ps5-homebrew-ui - Read-only clang-format export for SDK branch integration.
+# Copyright (C) 2026 BlackBearReloaded
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: SDK format export
+
+on:
+  push:
+    branches:
+      - "feature/ui-sdk-*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  formatter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # pinned
+      - name: Install formatter
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y clang-format-18
+      - name: Format project-owned SDK sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          sources=(src/sdk/*.cpp src/sdk/*.hpp src/gfx/gl_batch.cpp src/gfx/gl_batch.hpp tests/sdk_smoke.cpp tests/unit/sdk_*.cpp)
+          clang-format-18 -i "${sources[@]}"
+          git diff --stat
+      - name: Export only formatted source differences to logs
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64
+          import pathlib
+          import subprocess
+          paths = subprocess.check_output(["git", "diff", "--name-only"], text=True).splitlines()
+          for name in paths:
+              path = pathlib.Path(name)
+              data = base64.b64encode(path.read_bytes()).decode("ascii")
+              for index, start in enumerate(range(0, len(data), 1500)):
+                  print(f"HUIFMT|{name}|{index}|{data[start:start + 1500]}", flush=True)
+              print(f"HUIEND|{name}|{len(data)}", flush=True)
+          print(f"HUIFILES={len(paths)}", flush=True)
+          PY

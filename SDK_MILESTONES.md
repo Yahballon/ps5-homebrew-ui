@@ -160,15 +160,32 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       jobs, worker RUNNING. Screen captured at frame 3199 with average 16.68 ms,
       P99 17.18 ms, rolling max 17.22 ms; soak monitor worst 17.65 ms.
       Current CPU/GPU cache 8192 KiB / 8 entries each.
-- [ ] Correct soak peak sampling on its final frame: reported CPU/GPU peaks
-      7168/7168 KiB are lower than current cache 8192/8192 KiB because
-      finish() runs in the update stage, before the final frame's observe().
-      Monitor should record the final ready state before ending a test, with
-      regression tests. Treat the peak figure as a measurement artifact.
+- [x] Fix 200-wave final-frame telemetry sampling (v0.6.1): defer soak
+      finish/report until after the final frame's cache/frame-time sample.
+      Add regression test asserting all eight 1024-KiB covers produce an
+      8192-KiB peak instead of the previously reported 7168 KiB.
+      Real console confirmation of v0.6.1 is still required.
 - [ ] Further memory/lifecycle proof still needed: a 200-wave cache test
       is not a process heap or system VRAM leak test.
 - [ ] OS-level suspend/resume and lost-EGL restoration, process memory
       instrumentation, long-duration soak and native crash dumps remain open.
+
+## 2026-10-24: v0.6.1 peak telemetry and shutdown verification
+
+- [x] Correct v0.6.0 final-frame omission for cache-peak monitoring and
+      worst frame metrics without adding GPU calls, blocking IO or
+      recording duplicate frames.
+- [x] Make WorkerThread::stop() report the number of unstarted cancelled
+      jobs, whether pthread_join succeeded, and processed job count after
+      join; include controlled shutdown and EGL swap failure logs.
+- [x] Add host regression coverage for final-sample cache peaks and
+      shutdown reports; bump PPSA99863 content version to v0.6.1.
+- [ ] Verify complete CI lint/unit/integration, archive-only PS5 native link
+      and the PPSA99863 v0.6.1 installer ZIP.
+- [ ] Hardware retest: R2 200/200 PASS, 1600 uploads, errors 0,
+      **peak CPU/GPU 8192 KiB** and safe Options shutdown.
+- [ ] Real OS suspend/resume, lost EGL context restore and native crash
+      dumps remain separate v1.0 tasks.
 
 ## Production blockers, in priority order
 - [ ] WebP decoding, priority queue and production multi-worker scheduling

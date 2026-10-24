@@ -269,3 +269,27 @@ uploads, and bounded-cache operation on the tested PS5. This is not a
 multi-hour endurance test, a full-process heap measurement, an OS
 suspend/resume test, or verified crash recovery. The screenshot does not
 include the end-of-test elapsed time.
+
+## v0.6.1 peak-sample and worker-shutdown fix (hardware test pending)
+
+The SDK consumer v0.6.1 fixes the off-by-one-frame peak-cache metric
+observed in the user's v0.6.0 PS5 200-wave screenshot. The final stress
+outcome is now staged until after a successful display swap and the
+final `SoakMonitor::observe()` frame/cache sample, then the test closes
+and reports its peaks. Thus the final eighth GPU texture is included in
+the peak CPU/GPU cache counts.
+
+`WorkerThread::stop()` now returns `StopReport` with:
+- `cancelled_queued`: work that never started and was acknowledged.
+- `joined`: whether `pthread_join` completed for a running thread.
+- `processed_after_join`: cumulative work completed at join.
+
+The standalone consumer emits this report on Options shutdown and on its
+controlled EGL swap-failure path. This does not add crash stack traces or
+an OS-level suspend/resume adapter. A clean shutdown report must still
+be observed on the PS5 to verify the target-platform behavior.
+
+On console, launch PPSA99863 v0.6.1, press R2 in Gallery and look for
+`STRESS 200/200 PASS`, 1600 uploads, zero errors and cache peaks of at
+least **8192 KiB**. Capture telemetry. Options tests shutdown; an actual
+worker-joined log is the only proof of that final shutdown path.

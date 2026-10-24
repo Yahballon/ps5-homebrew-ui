@@ -24,6 +24,15 @@ class WorkerThread
   public:
     using Idle = void (*)(std::uint32_t);
 
+    // Returned by stop() for one-time, controlled shutdown diagnostics.
+    // joined=false means no worker was running and no pthread_join was needed.
+    struct StopReport
+    {
+        std::size_t cancelled_queued = 0;
+        std::uint64_t processed_after_join = 0;
+        bool joined = false;
+    };
+
     WorkerThread(JobQueue &queue, Idle idle, std::size_t stack_bytes = 512u * 1024u,
                  std::uint32_t idle_us = 3000)
         : queue_(queue), idle_(idle), stack_bytes_(stack_bytes), idle_us_(idle_us)
@@ -57,15 +66,22 @@ class WorkerThread
     // The caller first cancels cooperative, actively running job handles.
     // Unstarted queued work is cancelled/acknowledged here; joining ensures no
     // worker callback accesses a destroyed image cache after this returns.
-    void stop(bool cancel_queued = true)
+    StopReport stop(bool cancel_queued = true)
     {
+        StopReport result;
         if (cancel_queued)
-            queue_.cancel_queued();
+            result.cancelled_queued = queue_.cancel_queued();
         if (!started_)
-            return;
+        {
+            result.processed_after_join = processed_.load();
+            return result;
+        }
         stop_.store(true);
-        pthread_join(thread_, nullptr);
-        started_ = false;
+        result.joined = pthread_join(thread_, nullptr) == 0;
+        if (result.joined)
+            started_ = false;
+        result.processed_after_join = processed_.load();
+        return result;
     }
 
     bool running() const

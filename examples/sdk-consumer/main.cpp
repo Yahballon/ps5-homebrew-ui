@@ -100,7 +100,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
     draw.rounded_rect({72, 53, 1776, 140}, 24, card);
     draw.rounded_rect({72, 53, 13, 140}, 6, mint);
     label(draw, bold, "PS5 UI SDK  /  ARCHIVE CONSUMER", 110, 117, 42, foreground);
-    label(draw, regular, "by YAHBALLON  |  v0.6.0  |  libps5hui.a linked", 114, 161, 23, dim);
+    label(draw, regular, "by YAHBALLON  |  v0.6.1  |  libps5hui.a linked", 114, 161, 23, dim);
 
     const auto *route = navigation.current();
     const std::string current = route ? route->name : "home";
@@ -214,7 +214,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
 int main()
 {
     using namespace hui;
-    sys::log("[HUI ARCHIVE CONSUMER] start v0.6.0 libps5hui.a");
+    sys::log("[HUI ARCHIVE CONSUMER] start v0.6.1 libps5hui.a");
     ps5::Display display;
     if (!display.open(1920, 1080))
     {
@@ -303,11 +303,11 @@ int main()
                 sys::log("[HUI ARCHIVE CONSUMER] shutdown begin pending=%zu processed=%llu",
                          images.pending_count(),
                          static_cast<unsigned long long>(worker.processed_jobs()));
-                worker.stop();
-                sys::log("[HUI ARCHIVE CONSUMER] shutdown worker joined pending_queue=%zu "
-                         "processed=%llu",
-                         queue.pending_count(),
-                         static_cast<unsigned long long>(worker.processed_jobs()));
+                const auto report = worker.stop();
+                sys::log("[HUI ARCHIVE CONSUMER] shutdown worker joined=%d queued_cancelled=%zu "
+                         "pending_queue=%zu processed=%llu",
+                         report.joined ? 1 : 0, report.cancelled_queued, queue.pending_count(),
+                         static_cast<unsigned long long>(report.processed_after_join));
                 gpu.clear();
                 renderer.release();
                 display.close();
@@ -386,6 +386,7 @@ int main()
         }
 
         images.pump(1);
+        sdk::StressEvent terminal_event = sdk::StressEvent::none;
         if (stress.running())
         {
             bool all_ready = true;
@@ -410,21 +411,10 @@ int main()
             }
             else if (event == sdk::StressEvent::completed || event == sdk::StressEvent::failed)
             {
-                const auto &stats = images.statistics();
-                soak.finish(static_cast<std::uint64_t>(now));
-                sys::log("[HUI ARCHIVE CONSUMER] soak elapsed_ms=%llu peak_cpu=%zu peak_gpu=%zu "
-                         "slow_frames=%llu worst_ms=%.2f",
-                         static_cast<unsigned long long>(soak.elapsed_ms()), soak.peak_cpu_bytes(),
-                         soak.peak_gpu_bytes(), static_cast<unsigned long long>(soak.slow_frames()),
-                         soak.worst_frame_ms());
-                sys::log("[HUI ARCHIVE CONSUMER] stress %s %u/%u uploads=%llu decode_errors=%llu "
-                         "gpu_errors=%llu",
-                         event == sdk::StressEvent::completed ? "PASS" : "FAIL", stress.completed(),
-                         stress.target(), static_cast<unsigned long long>(stats.uploaded),
-                         static_cast<unsigned long long>(stats.decode_failures),
-                         static_cast<unsigned long long>(stats.upload_failures));
-                breadcrumbs.record(static_cast<std::uint64_t>(now), "stress",
-                                   event == sdk::StressEvent::completed ? "PASS" : "FAIL");
+                // The GPU can upload the eighth cover on the final frame.
+                // Defer finishing and the terminal log until after the frame's
+                // cache and frame-time observation to capture the actual peak.
+                terminal_event = event;
             }
         }
         draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok, lifecycle,
@@ -441,7 +431,11 @@ int main()
             breadcrumbs.record(static_cast<std::uint64_t>(now), "display", "EGL swap failed");
             sys::log("[HUI ARCHIVE CONSUMER] EGL swap failure");
             images.cancel_all();
-            worker.stop();
+            const auto report = worker.stop();
+            sys::log("[HUI ARCHIVE CONSUMER] display failure worker joined=%d "
+                     "queued_cancelled=%zu processed=%llu",
+                     report.joined ? 1 : 0, report.cancelled_queued,
+                     static_cast<unsigned long long>(report.processed_after_join));
             for (std::size_t index = 0; index < breadcrumbs.size(); ++index)
             {
                 const auto *event = breadcrumbs.at(index);
@@ -464,6 +458,28 @@ int main()
         soak.observe(static_cast<std::uint64_t>(time), cpu.used_bytes(), gpu.used_bytes(),
                      images.pending_count(), delta_ms);
         previous = time;
+        // The final upload must be included in peak-cache telemetry and
+        // the final displayed frame must be included in slow-frame statistics.
+        if (terminal_event != sdk::StressEvent::none)
+        {
+            soak.finish(static_cast<std::uint64_t>(time));
+            const auto &stats = images.statistics();
+            const bool pass = terminal_event == sdk::StressEvent::completed;
+            sys::log("[HUI ARCHIVE CONSUMER] soak elapsed_ms=%llu peak_cpu=%zu peak_gpu=%zu "
+                     "slow_frames=%llu worst_ms=%.2f",
+                     static_cast<unsigned long long>(soak.elapsed_ms()),
+                     soak.peak_cpu_bytes(), soak.peak_gpu_bytes(),
+                     static_cast<unsigned long long>(soak.slow_frames()),
+                     soak.worst_frame_ms());
+            sys::log("[HUI ARCHIVE CONSUMER] stress %s %u/%u uploads=%llu "
+                     "decode_errors=%llu gpu_errors=%llu",
+                     pass ? "PASS" : "FAIL", stress.completed(), stress.target(),
+                     static_cast<unsigned long long>(stats.uploaded),
+                     static_cast<unsigned long long>(stats.decode_failures),
+                     static_cast<unsigned long long>(stats.upload_failures));
+            breadcrumbs.record(static_cast<std::uint64_t>(time), "stress",
+                               pass ? "PASS" : "FAIL");
+        }
         ++frame_count;
         if (frame_count % 300 == 0)
         {

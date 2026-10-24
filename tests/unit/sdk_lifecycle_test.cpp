@@ -30,7 +30,10 @@ TEST(SdkWorker, OwnsThreadAndCanRestart)
     for (int attempt = 0; attempt < 200000 && !handle.finished(); ++attempt)
         std::this_thread::yield();
     ASSERT_TRUE(handle.finished());
-    worker.stop();
+    const auto report = worker.stop();
+    EXPECT_TRUE(report.joined);
+    EXPECT_EQ(report.cancelled_queued, 0u);
+    EXPECT_EQ(report.processed_after_join, 1u);
     EXPECT_FALSE(worker.running());
     EXPECT_EQ(worker.processed_jobs(), 1u);
     EXPECT_TRUE(worker.start());
@@ -46,7 +49,10 @@ TEST(SdkWorker, CancelsQueuedJobsWithoutCallingThem)
         queue.submit([&calls](hui::sdk::JobQueue::Context &) { calls.fetch_add(1); }, false);
     // Stopping before start still rejects queued work.
     hui::sdk::WorkerThread worker(queue, &idle_host);
-    worker.stop();
+    const auto report = worker.stop();
+    EXPECT_FALSE(report.joined);
+    EXPECT_EQ(report.cancelled_queued, 2u);
+    EXPECT_EQ(report.processed_after_join, 0u);
     EXPECT_EQ(calls.load(), 0);
     EXPECT_TRUE(first.finished());
     EXPECT_TRUE(first.cancelled());

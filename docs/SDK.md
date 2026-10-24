@@ -217,3 +217,19 @@ shutdown and then renders its worker join outcome and successful export
 path on the television. Press X to complete app exit. This is a
 **controlled shutdown** report, not a native crash dump. Diagnostic
 writes happen once, after joining the worker, never inside a render frame.
+
+## v0.7.0 explicit render-context restart testing
+
+`sdk/context_restart.hpp` models the **ordered, controlled teardown**
+of GPU textures, Renderer, and EGL before recreating the display,
+Renderer, fonts, and image requests. The helper has regression tests
+for success and failures during display open, renderer initialization,
+and font restoration. No GL calls are used by the SDK sequence itself;
+all platform effects are injected callback operations.
+
+The independent PPSA99863 consumer performs this sequence via L1
+while the old context is valid. The new EGL/GL diagnostic fields
+are included in the existing atomic, verified `shutdown.txt` receipt
+under /data where writable. This does **not** turn controller focus
+interception into PS5 OS suspend/resume, nor does it automatically
+recover an EGL context that has already been lost.

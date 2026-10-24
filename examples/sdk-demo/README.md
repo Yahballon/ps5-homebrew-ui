@@ -37,3 +37,26 @@ not prove the asynchronous image path; press X and confirm tile images move
 from DECODING to READY, then use Triangle to validate GPU invalidation/re-upload.
 
 App art uses the repository's existing icon until a dedicated one is created.
+
+## Console validation — October 24, 2026
+
+**Result: PASS for the interactive SDK Lab demo on a real PS5 (user reported).**
+
+Three PS5 screenshots supplied by the user show:
+
+- SDK Integration Test home screen rendering as designed.
+- Async Image Gallery: all eight unique cache entries show `READY`, all with
+  visible PNG cover art (the same bundled icon image by design).
+- Frame Diagnostics: `WORKER RUNNING`; decoded-image CPU cache
+  **8192 KiB / 8 images** and GPU image cache **8192 KiB / 8 textures**.
+- At the captured frame sample, **1686 frames**, rolling frame-time
+  average **16.69 ms**, P99 **17.17 ms**, maximum **17.24 ms**
+  (approximately 60 Hz, without evidence of major spikes in that window).
+- User reports that all tested demo functions work, including navigation and
+  interactive controls.
+
+**Scope:** Visual hardware validation and the user's functional report.
+Full-duration stress testing, exact texture reupload sequence logs, cross-firmware
+compatibility, complete lifecycle and crash recovery remain unverified. The
+`FRAMES >16.7ms` display currently counts frames against a 16.667ms internal
+threshold despite its rounded label; this is not itself evidence of a stutter.

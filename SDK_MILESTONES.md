@@ -137,6 +137,26 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
 - [ ] Add native OS suspend/resume callbacks, real EGL recovery and
       safe crash report capture (none of these are proven here).
 
+## 2026-10-24: SDK Consumer v0.6.0 long-run validation
+
+- [x] User confirmed v0.5.0 20/20 PASS, 160 uploads, 0 decode/GPU errors
+      and ~60 FPS on real PS5. Original hardware screenshots documented above.
+- [x] Add allocation-free `sdk/soak_monitor.hpp` with tests for observed
+      cache peak bytes, pending-job peaks, elapsed time, worst frame and frames
+      exceeding 33.334 ms.
+- [x] Add **R2: 200 cache cycles** to PPSA99863 v0.6.0; preserve R1:
+      20 cycles and all previous controls. Run uses the archive-linked SDK.
+- [x] Add soak telemetry (CPU/GPU *cache* peaks and slow-frame count),
+      throttle long-run progress logging to once per 20 waves and add
+      explicit shutdown-before/join-after log lines.
+- [ ] Full GitHub Actions lint/unit/integration and PS5 archive-only
+      compiler/linker/ZIP verification for v0.6.0.
+- [ ] Real PS5 200/200 PASS with zero decode and GPU errors, record
+      elapsed/slow-frame/peak-cache telemetry. This is a bounded stress
+      test, not proof of process-heap or VRAM leak freedom.
+- [ ] OS-level suspend/resume and lost-EGL restoration, process memory
+      instrumentation, long-duration soak and native crash dumps remain open.
+
 ## Production blockers, in priority order
 - [ ] WebP decoding, priority queue and production multi-worker scheduling
       (owned pthread worker, bounded image pipeline and stress harness exist).

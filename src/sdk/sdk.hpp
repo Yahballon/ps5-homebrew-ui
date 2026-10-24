@@ -16,6 +16,7 @@
 #include "sdk/lifecycle.hpp"
 #include "sdk/navigation.hpp"
 #include "sdk/paths.hpp"
+#include "sdk/soak_monitor.hpp"
 #include "sdk/read_image_file.hpp"
 #include "sdk/texture_cache.hpp"
 #include "sdk/worker_thread.hpp"

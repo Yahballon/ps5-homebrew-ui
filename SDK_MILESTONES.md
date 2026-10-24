@@ -124,8 +124,16 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       SDK static archive, original SDK Lab, archive-only PPSA99863 v0.5.0
       compiler/linker and ZIP source-whitelist validation all PASS.
       SDK Consumer installer artifact: 12562437870.
-- [ ] User tests v0.5.0 stress action on real PS5: 20/20 PASS and 0
-      decode/GPU errors without sustained stalls or memory growth.
+- [x] Real PS5 v0.5.0 stress test (user-provided console screenshots,
+      2026-10-24): STRESS 20/20 PASS, all eight covers READY, 160 GPU
+      uploads, decode errors 0, GPU errors 0 and worker RUNNING with 168
+      completed background jobs. CPU cache 8192 KiB / 8 images; GPU cache
+      8192 KiB / 8 textures. Captured frame 691: average 16.68 ms,
+      P99 17.18 ms, maximum 17.30 ms (~60 FPS).
+      This confirms a complete automated 20-wave stress run on real PS5
+      hardware, not extended soak testing or overall memory stability.
+- [ ] Long-duration soak test for memory growth, structured crash logs,
+      suspend/resume, EGL loss/recovery, and clean worker shutdown.
 - [ ] Add native OS suspend/resume callbacks, real EGL recovery and
       safe crash report capture (none of these are proven here).
 

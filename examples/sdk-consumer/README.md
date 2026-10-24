@@ -426,3 +426,38 @@ pressing X; exit-to-shell after that input has not been independently
 confirmed. Focus interception is not equivalent to system sleep/resume.
 Native crash dumps, EGL lost-context reconstruction and comprehensive
 whole-process memory-leak/long-duration validation remain open.
+
+## v0.7.0: experimental controlled EGL/OpenGL restart (pending hardware test)
+
+The **L1** button in the SDK Consumer now requests a deliberate, controlled
+restart of the native render context. Run this only when the app is
+responsive and the existing EGL context is healthy; it is **not** recovery
+from a real PS5 system suspend, power-state change or lost EGL context.
+
+The restart sequence, while the rendering thread still owns a valid context:
+1. Cancel/drop stale async image handles, release all GL image textures.
+2. Release Renderer programs, buffers and font atlases, then close EGL.
+3. Reopen EGL at the same requested resolution and initialize Renderer.
+4. Recreate both SDF font atlases and re-request the eight cover images.
+5. Continue normal rendering, retaining cached CPU decoded images.
+   The independent SDK continues supplying all UI symbols from
+   `libps5hui.a`.
+
+The telemetry screen reports **GL restart successes/attempts, last stage,
+and time in milliseconds**. On Options, the verified diagnostic exporter
+includes `gl.restart_attempts`, `gl.restart_success`,
+`gl.restart_last`, and `gl.restart_duration_us`.
+If a controlled restart fails, the app saves a one-time failure report
+through the same /data-first exporter and parks safely without continuing
+to render through a destroyed GL context.
+
+**Real PS5 procedure:** Start v0.7.0, open the Gallery, allow 8/8 READY,
+press **L1** once, wait for all covers to become READY again, then open
+Telemetry and confirm `GL restart: 1/1 OK`. Optionally repeat L1 two
+more times, then press Options and photograph the receipt. The exported
+`/data/PS5UI_SDK_Consumer/logs/shutdown.txt` includes restart counters.
+
+**Risk/limitations:** This is an explicitly experimental native
+`eglTerminate`→`eglInitialize` test. Not previously exercised on console.
+A native driver restart may hang or fail even if the build passes CI.
+Real EGL_CONTEXT_LOST handling remains a separate production milestone.

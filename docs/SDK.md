@@ -187,3 +187,19 @@ performance of the integrated SDK is **not verified** until CI and a console run
 
 GPL-3.0-or-later; see `LICENSE` and `THIRD_PARTY_NOTICES.md`. Applications linked with
 the SDK must satisfy the license terms.
+
+
+## Bounded long-run test telemetry (v0.6.0)
+
+`sdk/soak_monitor.hpp` is a zero-allocation, render-thread-only monitor for
+**CPU decoded-image and GPU texture cache usage**, elapsed time, peak pending
+image loads, frames over 33.334 ms, and the worst frame delta. The independent
+SDK consumer exposes this monitor during R1 (20 waves) or R2 (200 waves).
+It avoids disk writes during frame observation; console progress logging is
+throttled to one record per 20 waves.
+
+**Important limits:** Cache byte counts reflect image cache allocations,
+not actual process-heap use, resident memory, external GL allocations or all
+physical VRAM. Long-run cache reload stability does not establish complete
+leak freedom. OS suspend/resume, EGL recreation, and native crash stack dumps
+are still separate v1.0 milestones.

@@ -54,8 +54,12 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
 - [x] Add a true archive-only SDK consumer example and dedicated PPSA99863
       build path. Compile only consumer main and minimal PS5 runtime glue; link
       public headers and libps5hui.a, failing on unresolved SDK symbols.
-- [ ] Verify archive-only SDK consumer build, CI package and hardware execution
-      (new consumer is not validated by previous SDK Lab console screenshots).
+- [x] Verified archive-only SDK consumer cross-build and native ELF linking,
+      source whitelist, folder ZIP structure and 0777 permissions on CI run
+      40096468528 at commit 14d02c4c1e9ab852025a22256375f87fa54badd4.
+      SDK consumer artifact: 12560763851 (PPSA99863.zip).
+- [ ] User runs PPSA99863 on actual PS5 and verifies image loading,
+      navigation, GPU-clear, fresh reload, metrics and clean exit.
 - [ ] Capture console logs to confirm cache invalidation and reload sequencing,
       repeat-load stress, long-running memory stability and worker shutdown; no
       console logs were attached to this validation.

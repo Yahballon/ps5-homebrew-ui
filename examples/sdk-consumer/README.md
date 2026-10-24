@@ -236,8 +236,36 @@ archive-only consumer compile/link/installer ZIP verification.
 
 - **Consumer installer:** [PPSA99863.zip — artifact 12564004961](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40105545011/artifacts/12564004961)
 - Build commit: `a7a86470fc4becd41690d672539fb30e8b653cb2`
-- **Hardware state:** R2/200-wave testing is pending; do not claim a PS5
-  200/200 PASS until an actual console screenshot or log confirms it.
-- **Expected final state:** `STRESS 200/200 PASS`, uploads 1600,
-  decode errors 0, GPU errors 0 and eight images READY. The long-run
-  monitor reports observed cache peaks and slow-frame counts.
+- **Hardware state:** R2/200-wave PS5 stress validation PASSED on
+  2026-10-24, user-provided telemetry screenshot documented below.
+- **Observed:** `STRESS 200/200 IDLE / PASS`, 1600 uploads, decode
+  errors 0, GPU errors 0; 8 CPU images and 8 GPU textures in the caches.
+
+### Real PS5 v0.6.0 R2 long-run result (2026-10-24)
+
+| Console measurement | Observed |
+| --- | --- |
+| R2 automated cache stress | **200/200 PASS** |
+| Successful image uploads | **1600** |
+| Decode / GPU errors | **0 / 0** |
+| Worker / completed background jobs | RUNNING / 1768 |
+| Current decoded-image / GPU caches | 8192 / 8192 KiB (8 entries each) |
+| Soak frames over 33.334 ms | **0** |
+| Soak worst frame | 17.65 ms |
+| Captured total frame count | 3199 |
+| Rolling average / P99 / maximum | 16.68 / 17.18 / 17.22 ms |
+| Soak reported cache peaks | 7168 / 7168 KiB |
+| Controller focus losses / returns | 0 / 0 |
+
+**Known diagnostic sampling issue:** 7168 KiB *peak* appears smaller than
+8192 KiB *current* usage. The on-console logic ends the soak on the frame
+that completes the last round before its later per-frame monitor sample,
+which can omit the last frame's eight-texture peak. This is a measurement
+artifact requiring a code/test fix; it does not indicate missing images or
+memory leakage.
+
+The 200-round outcome verifies repeated PNG file reads, decoding, texture
+uploads, and bounded-cache operation on the tested PS5. This is not a
+multi-hour endurance test, a full-process heap measurement, an OS
+suspend/resume test, or verified crash recovery. The screenshot does not
+include the end-of-test elapsed time.

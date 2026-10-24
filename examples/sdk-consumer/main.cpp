@@ -467,9 +467,8 @@ int main()
             const bool pass = terminal_event == sdk::StressEvent::completed;
             sys::log("[HUI ARCHIVE CONSUMER] soak elapsed_ms=%llu peak_cpu=%zu peak_gpu=%zu "
                      "slow_frames=%llu worst_ms=%.2f",
-                     static_cast<unsigned long long>(soak.elapsed_ms()),
-                     soak.peak_cpu_bytes(), soak.peak_gpu_bytes(),
-                     static_cast<unsigned long long>(soak.slow_frames()),
+                     static_cast<unsigned long long>(soak.elapsed_ms()), soak.peak_cpu_bytes(),
+                     soak.peak_gpu_bytes(), static_cast<unsigned long long>(soak.slow_frames()),
                      soak.worst_frame_ms());
             sys::log("[HUI ARCHIVE CONSUMER] stress %s %u/%u uploads=%llu "
                      "decode_errors=%llu gpu_errors=%llu",
@@ -477,8 +476,7 @@ int main()
                      static_cast<unsigned long long>(stats.uploaded),
                      static_cast<unsigned long long>(stats.decode_failures),
                      static_cast<unsigned long long>(stats.upload_failures));
-            breadcrumbs.record(static_cast<std::uint64_t>(time), "stress",
-                               pass ? "PASS" : "FAIL");
+            breadcrumbs.record(static_cast<std::uint64_t>(time), "stress", pass ? "PASS" : "FAIL");
         }
         ++frame_count;
         if (frame_count % 300 == 0)

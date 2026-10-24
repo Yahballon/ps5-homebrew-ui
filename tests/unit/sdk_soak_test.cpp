@@ -34,8 +34,7 @@ TEST(SdkSoakMonitor, FinalFrameMustBeObservedBeforeFinishing)
     hui::sdk::SoakMonitor monitor;
     monitor.begin(100000);
     for (std::size_t index = 1; index < 8; ++index)
-        monitor.observe(100000 + index * 16000, index * 1024, index * 1024,
-                        8 - index, 16.6f);
+        monitor.observe(100000 + index * 16000, index * 1024, index * 1024, 8 - index, 16.6f);
 
     // Last GPU upload completes on the same frame as the final stress wave.
     monitor.observe(228000, 8192, 8192, 0, 17.3f);

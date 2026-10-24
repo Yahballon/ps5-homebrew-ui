@@ -43,12 +43,20 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       Actions run 40094858417 (source commit 9e076870a52bc48e6703b048aa8e935352f503b0).
       Independent installable artifact: PPSA99862.zip, GitHub Actions artifact
       12560840719. The original PPSA99050 ZIP and SDK archive also passed.
-- [ ] User tests SDK Demo navigation, covers, cache invalidation and memory
-      behavior on an actual PS5, and shares its logs.
-- [ ] Build and exercise a separate application integrating the new SDK
-      navigation, asynchronous cover pipeline and texture lifecycle on PS5.
-- [ ] Collect PS5 logs/screenshots and verify input, rendering, audio, and
-      repeated image loads without stalls or memory leaks.
+- [x] User tested SDK Demo PPSA99862 v0.2.0 on an actual PS5 (2026-10-24),
+      reported that all tested controls and screens work, and provided three
+      console screenshots: Home, Gallery and Frame Diagnostics.
+- [x] SDK Demo navigation, asynchronous PNG loading and CPU/GPU cache integration
+      exercised by the user on PS5: all eight images shown READY, worker RUNNING,
+      CPU cache 8192 KiB / 8 images and GPU cache 8192 KiB / 8 textures.
+      Reported frame sample: 1686 total frames, 16.69 ms rolling average,
+      p99 17.17 ms and maximum 17.24 ms (roughly 60 Hz).
+- [ ] Standalone archive-only SDK consumer (current demo is a separately installed
+      title, but compiles UI-kit sources in the same repository).
+- [ ] Capture console logs to confirm cache invalidation and reload sequencing,
+      repeat-load stress, long-running memory stability and worker shutdown; no
+      console logs were attached to this validation.
+- [ ] Verify console audio, suspend/resume, crash recovery, and broader real-game use.
 
 ## Production blockers, in priority order
 - [ ] WebP decode, priority queue and concrete PS5 worker ownership (bounded async image pipeline implemented).

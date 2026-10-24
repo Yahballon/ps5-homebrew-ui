@@ -404,8 +404,10 @@ int main()
             if (event == sdk::StressEvent::reload)
             {
                 reload_all();
-                sys::log("[HUI ARCHIVE CONSUMER] stress %u/%u", stress.completed(),
-                         stress.target());
+                // Avoid console filesystem stalls from one log entry per wave.
+                if (stress.completed() % 20u == 0u)
+                    sys::log("[HUI ARCHIVE CONSUMER] stress progress %u/%u",
+                             stress.completed(), stress.target());
             }
             else if (event == sdk::StressEvent::completed || event == sdk::StressEvent::failed)
             {

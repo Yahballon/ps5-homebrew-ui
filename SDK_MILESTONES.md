@@ -58,8 +58,16 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       source whitelist, folder ZIP structure and 0777 permissions on CI run
       40096468528 at commit 14d02c4c1e9ab852025a22256375f87fa54badd4.
       SDK consumer artifact: 12560763851 (PPSA99863.zip).
-- [ ] User runs PPSA99863 on actual PS5 and verifies image loading,
-      navigation, GPU-clear, fresh reload, metrics and clean exit.
+- [x] User tested PPSA99863 v0.3.0 on actual PS5 (2026-10-24), reported
+      that all tested functions work, and supplied screenshots of home, gallery
+      and frame-telemetry screens.
+- [x] Confirmed visually: 8/8 PNG covers READY, worker RUNNING, both RAM
+      and GPU caches 8192 KiB with 8 entries each. Telemetry at 1198 frames:
+      average 16.68 ms, P99 17.01 ms, maximum 17.03 ms (about 60 FPS).
+      Together with the successful archive-only CI linking test, this verifies
+      a genuine external consumer can run the static SDK on PS5 hardware.
+- [ ] Independently capture console-log evidence for repeated GPU-clear/reload,
+      fresh file reads, clean Options shutdown, and suspend/resume behavior.
 - [ ] Capture console logs to confirm cache invalidation and reload sequencing,
       repeat-load stress, long-running memory stability and worker shutdown; no
       console logs were attached to this validation.

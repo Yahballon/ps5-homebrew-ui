@@ -47,9 +47,8 @@ class WorkerThread
             return false;
         const bool stack_ok = pthread_attr_setstacksize(&attributes, stack_bytes_) == 0;
         stop_.store(false);
-        const int status = stack_ok ? pthread_create(&thread_, &attributes, &WorkerThread::entry,
-                                                     this)
-                                    : -1;
+        const int status =
+            stack_ok ? pthread_create(&thread_, &attributes, &WorkerThread::entry, this) : -1;
         pthread_attr_destroy(&attributes);
         started_ = status == 0;
         return started_;

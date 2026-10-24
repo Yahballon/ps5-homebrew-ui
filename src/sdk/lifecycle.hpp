@@ -63,11 +63,26 @@ class LifecycleMonitor
         state_ = LifecycleState::stopping;
     }
 
-    LifecycleState state() const { return state_; }
-    std::uint32_t focus_losses() const { return focus_losses_; }
-    std::uint32_t focus_returns() const { return focus_returns_; }
-    std::uint32_t display_errors() const { return display_errors_; }
-    std::uint32_t display_resets() const { return display_resets_; }
+    LifecycleState state() const
+    {
+        return state_;
+    }
+    std::uint32_t focus_losses() const
+    {
+        return focus_losses_;
+    }
+    std::uint32_t focus_returns() const
+    {
+        return focus_returns_;
+    }
+    std::uint32_t display_errors() const
+    {
+        return display_errors_;
+    }
+    std::uint32_t display_resets() const
+    {
+        return display_resets_;
+    }
 
   private:
     LifecycleState state_ = LifecycleState::active;

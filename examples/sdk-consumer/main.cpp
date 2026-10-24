@@ -316,8 +316,8 @@ int main()
         }
 
         images.pump(1);
-        draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok,
-                  lifecycle, worker.processed_jobs(), selected, frame_count);
+        draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok, lifecycle,
+                  worker.processed_jobs(), selected, frame_count);
         renderer.begin();
         renderer.draw(frame);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -354,12 +354,12 @@ int main()
         if (frame_count % 300 == 0)
         {
             const auto result = frametimes.summary();
-            sys::log(
-                "[HUI ARCHIVE CONSUMER] frames=%llu p99=%.2f avg=%.2f CPU=%zu GPU=%zu pending=%zu jobs=%llu focus=%u/%u",
-                static_cast<unsigned long long>(frame_count), result.p99_ms, result.average_ms,
-                cpu.used_bytes(), gpu.used_bytes(), images.pending_count(),
-                static_cast<unsigned long long>(worker.processed_jobs()),
-                lifecycle.focus_losses(), lifecycle.focus_returns());
+            sys::log("[HUI ARCHIVE CONSUMER] frames=%llu p99=%.2f avg=%.2f CPU=%zu GPU=%zu "
+                     "pending=%zu jobs=%llu focus=%u/%u",
+                     static_cast<unsigned long long>(frame_count), result.p99_ms, result.average_ms,
+                     cpu.used_bytes(), gpu.used_bytes(), images.pending_count(),
+                     static_cast<unsigned long long>(worker.processed_jobs()),
+                     lifecycle.focus_losses(), lifecycle.focus_returns());
         }
     }
 }

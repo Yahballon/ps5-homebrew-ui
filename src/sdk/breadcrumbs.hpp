@@ -38,7 +38,10 @@ class Breadcrumbs
             ++count_;
     }
 
-    std::size_t size() const { return count_; }
+    std::size_t size() const
+    {
+        return count_;
+    }
 
     // Oldest first; nullptr if index is out of range.
     const Breadcrumb *at(std::size_t index) const
@@ -49,8 +52,7 @@ class Breadcrumbs
     }
 
   private:
-    template <std::size_t N>
-    static void copy(std::array<char, N> &out, std::string_view value)
+    template <std::size_t N> static void copy(std::array<char, N> &out, std::string_view value)
     {
         const std::size_t n = value.size() < N - 1 ? value.size() : N - 1;
         for (std::size_t i = 0; i < n; ++i)

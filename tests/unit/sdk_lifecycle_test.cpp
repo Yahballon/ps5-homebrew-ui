@@ -26,9 +26,7 @@ TEST(SdkWorker, OwnsThreadAndCanRestart)
     hui::sdk::WorkerThread worker(queue, &idle_host);
     ASSERT_TRUE(worker.start());
     EXPECT_FALSE(worker.start());
-    auto handle = queue.submit([](hui::sdk::JobQueue::Context &ctx) {
-        ctx.set_progress(0.4f);
-    });
+    auto handle = queue.submit([](hui::sdk::JobQueue::Context &ctx) { ctx.set_progress(0.4f); });
     for (int attempt = 0; attempt < 200000 && !handle.finished(); ++attempt)
         std::this_thread::yield();
     ASSERT_TRUE(handle.finished());
@@ -43,12 +41,9 @@ TEST(SdkWorker, CancelsQueuedJobsWithoutCallingThem)
 {
     hui::sdk::JobQueue queue;
     std::atomic<int> calls{0};
-    auto first = queue.submit([&calls](hui::sdk::JobQueue::Context &) {
-        calls.fetch_add(1);
-    });
-    auto second = queue.submit([&calls](hui::sdk::JobQueue::Context &) {
-        calls.fetch_add(1);
-    }, false);
+    auto first = queue.submit([&calls](hui::sdk::JobQueue::Context &) { calls.fetch_add(1); });
+    auto second =
+        queue.submit([&calls](hui::sdk::JobQueue::Context &) { calls.fetch_add(1); }, false);
     // Stopping before start still rejects queued work.
     hui::sdk::WorkerThread worker(queue, &idle_host);
     worker.stop();

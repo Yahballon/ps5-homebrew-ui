@@ -1,0 +1,31 @@
+# Temporary SDK consumer clang-format export; deleted after applying results.
+name: SDK consumer format export
+on:
+  push:
+    branches: ['feature/ui-sdk-*']
+permissions:
+  contents: read
+jobs:
+  formatter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install clang-format 18
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y clang-format-18
+      - name: Format independent consumer
+        run: clang-format-18 -i examples/sdk-consumer/main.cpp
+      - name: Export formatted code
+        run: |
+          python3 - <<'PY'
+          import base64
+          from pathlib import Path
+          import subprocess
+          for path in subprocess.check_output(['git','diff','--name-only'],text=True).splitlines():
+              encoded=base64.b64encode(Path(path).read_bytes()).decode('ascii')
+              for n,start in enumerate(range(0,len(encoded),1500)):
+                  print(f'HUIFMT|{path}|{n}|{encoded[start:start+1500]}',flush=True)
+              print(f'HUIEND|{path}|{len(encoded)}',flush=True)
+          PY

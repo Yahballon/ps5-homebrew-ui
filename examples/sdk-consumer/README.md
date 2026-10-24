@@ -137,3 +137,24 @@ in the screenshot sample (~60 FPS). The focus counter was **not** exercised
 by a focus-loss event. These screenshots do **not** yet verify Triangle GPU
 cache invalidation, Square fresh decoding, Options clean exit, long-run memory
 stability or OS suspend/resume. Those require event logs or dedicated tests.
+
+## v0.5.0 cache stress testing (pending PS5 validation)
+
+This SDK consumer version adds:
+
+- **R1** in the gallery: run a **20-round cache stress test** (press R1
+  again to stop). Each round discards the previous image request generation,
+  releases GPU textures on the render thread, clears decoded CPU images,
+  reads/decodes eight PNG covers via the worker, and uploads at most one
+  texture per rendered frame.
+- The gallery shows `STRESS X/20 RUNNING` then `PASS` or `FAIL`.
+- The frame telemetry adds cumulative successful texture uploads and
+  separate PNG-decode and GPU-upload error counters.
+- **Square** restarts all eight covers from disk. **Triangle** clears GPU
+  textures and reuploads decoded covers already in RAM. Both actions are
+  designed to work even when other loads are still pending.
+- Every round is time-limited to 15 seconds. Failure and final success
+  produce a single `[HUI ARCHIVE CONSUMER] stress` log record.
+- Read `SDK_MILESTONES.md` before claiming v0.5.0 ready: the previous
+  hardware test proved v0.4.0 only. It also verified repeated manual
+  Square and Triangle tests by user report (without logs).

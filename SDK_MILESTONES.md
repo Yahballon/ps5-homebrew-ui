@@ -185,10 +185,28 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       showcase, reusable SDK archive, previous SDK Lab and archive-only
       PPSA99863 v0.6.1 link/ZIP checks all PASS.
       Consumer install artifact: 12564858169.
-- [ ] Hardware retest: R2 200/200 PASS, 1600 uploads, errors 0,
-      **peak CPU/GPU 8192 KiB** and safe Options shutdown.
+- [x] User reports that the updated PPSA99863 v0.6.1 app functions
+      correctly on their PS5 (2026-10-24). Specific corrected peak values
+      and worker pthread_join outcome are not independently verified;
+      user could not locate logs.
+- [ ] Verify screenshot telemetry for R2 200/200 and CPU/GPU peaks of
+      8192/8192 KiB, and capture the actual Options shutdown log including
+      worker joined=1. Hardware logging receipt remains pending.
 - [ ] Real OS suspend/resume, lost EGL context restore and native crash
       dumps remain separate v1.0 tasks.
+
+## SDK Consumer log retrieval — 2026-10-24
+
+- [x] Confirm runtime logging behavior from `src/runtime/runtime_shims.c`:
+      stdout/stderr are redirected to
+      `/download0/hui/dev/app.log` in the running title's sandbox;
+      previous launch is renamed to `app.prev.log`.
+- [x] Document external FTP path
+      `/mnt/sandbox/PPSA99863_000/download0/hui/dev/app.log` and that
+      the console sandbox is available while the app is running.
+- [ ] User retrieves console log for v0.6.1; confirm
+      `shutdown worker joined=1` from runtime logs. Avoid claiming the
+      shutdown worker has been verified before receiving the receipt.
 
 ## Production blockers, in priority order
 - [ ] WebP decoding, priority queue and production multi-worker scheduling

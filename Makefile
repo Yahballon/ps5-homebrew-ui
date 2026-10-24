@@ -8,6 +8,7 @@ SHELL := /bin/bash
 -include .env
 
 APP_DEFINITIONS ?=
+APP_PARAM_FILE ?= sce_sys/param.json
 APP_INCLUDE_PATHS ?=
 APP_STATIC_ARCHIVES ?=
 APP_IMPORT_STUBS ?=
@@ -43,6 +44,7 @@ BUILD_JOBS ?= $(shell nproc 2>/dev/null || echo 2)
 USE_CCACHE ?= 1
 export BUILD_JOBS USE_CCACHE
 export HOST_CXX HOST_TEST_CXXFLAGS HOST_TEST_LDFLAGS
+export APP_PARAM_FILE
 export APP_DEFINITIONS APP_INCLUDE_PATHS APP_STATIC_ARCHIVES APP_IMPORT_STUBS APP_RUNTIME_MODULES
 export PS5_OPENGL_PREFIX
 export PACBREW_PACKAGES PACBREW_INCLUDE_PATHS PACBREW_STATIC_ARCHIVES
@@ -203,3 +205,9 @@ help:
 .PHONY: sdk
 sdk: app
 	bash tools/pack-sdk.sh
+
+# Separate, installable PS5 SDK demo (not the default homebrew UI title).
+.PHONY: sdk-demo
+sdk-demo: $(RUNTIME) opengl
+	@printf '%s\n' '==> [sdk-demo] Building PPSA99862 native demo title'
+	@$(MAKE) app APP_DEFINITIONS="HUI_SDK_DEMO=1" APP_PARAM_FILE="examples/sdk-demo/param.json"

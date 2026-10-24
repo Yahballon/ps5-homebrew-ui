@@ -167,6 +167,17 @@ app, open **Theme Lab** and press **L2** / **R2**.
 </table>
 <!-- END:themes -->
 
+## PS5 SDK Lab demo (separate installer)
+
+A developer test title `PPSA99862` exercises screen navigation, native worker
+thread image decoding, CPU and GPU image caches, one-upload-per-frame scheduling,
+DualSense controls and performance telemetry. It does **not** overwrite the
+regular Homebrew UI Lab `PPSA99050` app.
+
+Use `make sdk-demo` and install `dist/PPSA99862.zip`. PR/feature-branch Actions
+also publish an `-sdk-demo` artifact after full testing. See
+[the console testing guide](examples/sdk-demo/README.md).
+
 ## Reusable SDK (experimental)
 
 The reusable `libps5hui.a` package and the portable SDK helpers can be built with

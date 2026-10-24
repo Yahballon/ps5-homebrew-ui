@@ -35,6 +35,13 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
 - [x] User reports installing/testing the built app on a real PS5 and confirms
       that the app works (2026-10-24). This is a user-reported hardware smoke
       test, **not** comprehensive SDK feature or performance validation.
+- [x] Add a separate SDK Demo native application (PPSA99862), demonstrating
+      navigation, CPU/GPU caches, real PNG decoding on a PS5 pthread worker,
+      bounded render-thread uploads, controller input and frame timings.
+- [x] Add unit tests for SDK Demo route transitions and demo-specific packaging.
+- [ ] Confirm standalone SDK Demo CI artifact builds successfully.
+- [ ] User tests SDK Demo navigation, covers, cache invalidation and memory
+      behavior on an actual PS5, and shares its logs.
 - [ ] Build and exercise a separate application integrating the new SDK
       navigation, asynchronous cover pipeline and texture lifecycle on PS5.
 - [ ] Collect PS5 logs/screenshots and verify input, rendering, audio, and

@@ -30,7 +30,14 @@ for command in python3 sha256sum; do
 done
 bash "$root/tools/setup-native-dependencies.sh" >/dev/null
 
-param="$root/sce_sys/param.json"
+# An alternate, independently installable SDK demo has its own metadata.
+param_relative=${APP_PARAM_FILE:-sce_sys/param.json}
+[[ $param_relative =~ ^[A-Za-z0-9_./-]+\.json$ && $param_relative != /* &&
+    $param_relative != *..* && -f $root/$param_relative ]] || {
+    echo "Invalid APP_PARAM_FILE: $param_relative" >&2
+    exit 2
+}
+param="$root/$param_relative"
 title_id=$(python3 - "$param" <<'PY'
 import json, re, sys
 

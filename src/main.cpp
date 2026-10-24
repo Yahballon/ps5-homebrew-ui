@@ -6,6 +6,7 @@
 // read input, update, play the sounds it asked for, draw, present. Lifecycle
 // markers and frame pacing are logged for hardware runs.
 
+#ifndef HUI_SDK_DEMO
 #include "app/shell.hpp"
 #include "app/tour.hpp"
 #include "audio/cues.hpp"
@@ -417,3 +418,9 @@ int main()
         }
     }
 }
+
+#else
+// The installer for PPSA99862 is compiled with HUI_SDK_DEMO=1.
+extern int hui_sdk_demo_main();
+int main() { return hui_sdk_demo_main(); }
+#endif

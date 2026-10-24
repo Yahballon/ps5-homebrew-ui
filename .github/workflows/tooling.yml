@@ -228,6 +228,38 @@ jobs:
           compression-level: 0
           retention-days: 14
 
+      # The demo gets its OWN title ID. Only development branches / PRs build it.
+      # A production version tag still publishes only the original stable ZIP.
+      - name: Build standalone SDK Lab demo
+        if: github.ref_type != 'tag'
+        run: make sdk-demo
+
+      - name: Verify SDK Lab installer
+        if: github.ref_type != 'tag'
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          path = "dist/PPSA99862.zip"
+          with zipfile.ZipFile(path) as archive:
+              assert archive.testzip() is None
+              assert "PPSA99862/eboot.bin" in archive.namelist()
+              assert "PPSA99862/sce_sys/param.json" in archive.namelist()
+              assert all(name.startswith("PPSA99862/") for name in archive.namelist())
+              assert all((i.external_attr >> 16) & 0o777 == 0o777
+                         for i in archive.infolist())
+          print(f"{path}: tested installer structure and permissions")
+          PY
+
+      - name: Upload standalone SDK Lab
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.label.outputs.artifact }}-sdk-demo
+          path: dist/PPSA99862.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
   release:
     name: GitHub release
     if: needs.build.outputs.release == 'true'

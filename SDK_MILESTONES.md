@@ -269,9 +269,13 @@ Last updated: 2026-10-25. Development branch: `feature/ui-sdk-foundation-2026102
 - [x] Save restart count/status/duration in the working `/data`
       shutdown diagnostic report. On a controlled restart failure write
       one failure receipt and park instead of using invalid GL handles.
-- [ ] Run clang-format, host regression suite, CI and PS5 cross-build
-      against the independent static SDK archive; provide tester artifact
-      only after all pass.
+- [x] GitHub Actions run 40144460198 at commit
+      82c07a7a9cdb27c6da9269abf86c48660b692735 PASSED source lint,
+      host GoogleTest (including restart-order error paths), integration,
+      PS5 native release build, SDK static archive, original SDK Lab,
+      independent archive-only PPSA99863 v0.7.0 build/link, and ZIP
+      source whitelist/permissions verification. Consumer artifact:
+      12579803675 (PPSA99863.zip).
 - [ ] Real PS5 L1 test: verify screen resumes, covers reload and READY,
       framebuffer remains responsive, `GL restart 1/1 OK` after return,
       and saved shutdown log reports `gl.restart_success=1`.

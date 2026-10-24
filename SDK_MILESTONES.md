@@ -104,8 +104,31 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
 - [ ] Add true OS suspend/resume hooks, re-create lost EGL resources,
       and native crash stack traces; these are not yet implemented.
 
+## 2026-10-24: PS5 Consumer v0.5.0 cache stress and diagnostics
+
+- [x] User reports repeated Triangle GPU clears and Square PNG reloads
+      work correctly on PS5 with the previous v0.4.0 Consumer.
+      No console logs or long-duration data were supplied.
+- [x] Add `AsyncImages::reset()` to safely cancel/discard stale in-flight
+      image results before a fresh generation of requests; leave shared
+      CPU/GPU resource ownership with their caches.
+- [x] Add cumulative per-frame-safe image diagnostic counters for upload
+      success, decode errors, GPU upload errors and cancellation.
+- [x] Add reusable, bounded `sdk::ImageStress` state machine and tests
+      for finite rounds, failure, timeout and cancellation.
+- [x] Add R1-triggered 20-round independent PS5 PNG + GPU cache stress
+      test to archive-only PPSA99863, with progress, counters and a
+      single completion/failure log. Update title to v0.5.0.
+- [ ] Confirm GitHub CI: lint, unit tests, original build and archive-only
+      consumer link/installer for v0.5.0.
+- [ ] User tests v0.5.0 stress action on real PS5: 20/20 PASS and 0
+      decode/GPU errors without sustained stalls or memory growth.
+- [ ] Add native OS suspend/resume callbacks, real EGL recovery and
+      safe crash report capture (none of these are proven here).
+
 ## Production blockers, in priority order
-- [ ] WebP decode, priority queue and concrete PS5 worker ownership (bounded async image pipeline implemented).
+- [ ] WebP decoding, priority queue and production multi-worker scheduling
+      (owned pthread worker, bounded image pipeline and stress harness exist).
 - [ ] Full OS lifecycle/suspend/resume and structured job errors (basic owned
       pthread with cooperative stop and pending cancellation now implemented).
 - [ ] Full Unicode shaping, bidirectional text, locale formatting and accessibility.

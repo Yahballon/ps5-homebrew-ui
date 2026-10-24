@@ -224,8 +224,15 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       write a bounded shutdown receipt once and show an on-screen report
       with actual join result, processed/cancelled jobs, export success
       and the verified path; press X on the receipt to exit.
-- [ ] Confirm CI host test, PS5 cross-build and archive-only linkage;
-      then verify report screen and chosen export path on real hardware.
+- [x] GitHub Actions run 40136580964 on commit 8a7ff8a2c9f2b369c719440375a42a53cdc744ef:
+      source lint, new export path unit tests, host tests/integration,
+      normal PS5 title, reusable SDK archive, SDK Lab and archive-only
+      PPSA99863 v0.6.2 compiler/linker/installer validation all PASS.
+      Consumer artifact: 12577500627 (PPSA99863.zip).
+- [ ] On-console v0.6.2 test: press Options, photograph actual worker
+      join and export status; if saved, retrieve shutdown.txt from the
+      exact path the app displays. File availability remains unverified
+      until that console test succeeds.
 - [ ] Actual OS suspend/resume, automatic EGL reconstruction and
       native crash dump/symbolication remain outstanding.
 

@@ -1,6 +1,6 @@
 // ps5-homebrew-ui - Controlled EGL/GL restart sequencing.
- // Copyright (C) 2026 BlackBearReloaded
- // SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 BlackBearReloaded
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "sdk/context_restart.hpp"
 

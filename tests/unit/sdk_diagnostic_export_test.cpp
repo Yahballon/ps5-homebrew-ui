@@ -18,7 +18,8 @@ TEST(SdkDiagnosticExport, PrefersBrowsableDataDirectory)
     std::vector<std::string> visited;
     const auto receipt = hui::sdk::export_diagnostics(
         "joined=1\n", [](const std::string &) { return true; },
-        [&visited](const std::string &path, std::string_view contents) {
+        [&visited](const std::string &path, std::string_view contents)
+        {
             visited.push_back(path);
             EXPECT_EQ(contents, "joined=1\n");
             return std::string{};
@@ -31,9 +32,8 @@ TEST(SdkDiagnosticExport, PrefersBrowsableDataDirectory)
 TEST(SdkDiagnosticExport, FallsBackToUsbIfDataIsUnavailable)
 {
     const auto receipt = hui::sdk::export_diagnostics(
-        "state", [](const std::string &path) {
-            return path.find("/data/") != 0;
-        }, [](const std::string &, std::string_view) { return std::string{}; });
+        "state", [](const std::string &path) { return path.find("/data/") != 0; },
+        [](const std::string &, std::string_view) { return std::string{}; });
     EXPECT_TRUE(receipt.saved);
     EXPECT_EQ(receipt.path, "/mnt/usb0/PS5UI_SDK_Consumer/logs/shutdown.txt");
 }
@@ -42,9 +42,8 @@ TEST(SdkDiagnosticExport, FallsBackWhenFirstWriteFails)
 {
     const auto receipt = hui::sdk::export_diagnostics(
         "state", [](const std::string &) { return true; },
-        [](const std::string &path, std::string_view) {
-            return path.find("/data/") == 0 ? std::string{"permission denied"} : std::string{};
-        });
+        [](const std::string &path, std::string_view)
+        { return path.find("/data/") == 0 ? std::string{"permission denied"} : std::string{}; });
     EXPECT_TRUE(receipt.saved);
     EXPECT_EQ(receipt.path, "/mnt/usb0/PS5UI_SDK_Consumer/logs/shutdown.txt");
 }

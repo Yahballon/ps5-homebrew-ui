@@ -21,8 +21,8 @@ struct DiagnosticExportResult
 // Both callbacks are supplied by the caller; no filesystem writes happen
 // until the caller explicitly exports a bounded diagnostic receipt.
 template <typename EnsureDirectory, typename WriteAtomic>
-DiagnosticExportResult export_diagnostics(std::string_view contents,
-                                           EnsureDirectory ensure, WriteAtomic write)
+DiagnosticExportResult export_diagnostics(std::string_view contents, EnsureDirectory ensure,
+                                          WriteAtomic write)
 {
     struct Candidate
     {

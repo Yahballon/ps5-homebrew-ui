@@ -101,8 +101,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
                const hui::sdk::FrameMonitor &frames, bool worker_running,
                const hui::sdk::LifecycleMonitor &lifecycle, const hui::sdk::ImageStress &stress,
                const hui::sdk::SoakMonitor &soak, const ShutdownReceipt &receipt,
-               std::uint64_t processed_jobs, std::size_t selected,
-               std::uint64_t frame_count)
+               std::uint64_t processed_jobs, std::size_t selected, std::uint64_t frame_count)
 {
     const Color foreground = Color::rgb(0xffffff);
     const Color dim = Color::rgb(0x9fb1c6);
@@ -121,22 +120,23 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
     {
         draw.rounded_rect({154, 254, 1610, 662}, 32, card);
         label(draw, bold, "WORKER SHUTDOWN RECEIPT", 215, 340, 44, foreground);
-        label(draw, regular, "The worker has stopped. You can photograph this screen.",
-              218, 400, 26, dim);
-        label(draw, bold, receipt.joined ? "WORKER JOINED: YES" : "WORKER JOINED: NO",
-              225, 505, 40, receipt.joined ? mint : Color::rgb(0xff7e8b));
+        label(draw, regular, "The worker has stopped. You can photograph this screen.", 218, 400,
+              26, dim);
+        label(draw, bold, receipt.joined ? "WORKER JOINED: YES" : "WORKER JOINED: NO", 225, 505, 40,
+              receipt.joined ? mint : Color::rgb(0xff7e8b));
         char report[160];
         std::snprintf(report, sizeof(report), "Pending jobs cancelled: %zu    Processed jobs: %llu",
                       receipt.cancelled, static_cast<unsigned long long>(receipt.processed));
         label(draw, regular, report, 225, 569, 28, foreground);
-        label(draw, bold, receipt.saved ? "DIAGNOSTIC FILE: SAVED" :
-              "DIAGNOSTIC FILE: NO WRITABLE LOCATION", 225, 670, 31,
-              receipt.saved ? mint : Color::rgb(0xffb37d));
+        label(draw, bold,
+              receipt.saved ? "DIAGNOSTIC FILE: SAVED" : "DIAGNOSTIC FILE: NO WRITABLE LOCATION",
+              225, 670, 31, receipt.saved ? mint : Color::rgb(0xffb37d));
         if (receipt.saved)
             label(draw, regular, receipt.path, 225, 735, 24, foreground);
         else
-            label(draw, regular, "Use a screenshot of this screen; the shutdown status is shown above.",
-                  225, 735, 23, dim);
+            label(draw, regular,
+                  "Use a screenshot of this screen; the shutdown status is shown above.", 225, 735,
+                  23, dim);
         label(draw, bold, "PRESS X TO EXIT", 225, 843, 32, mint);
     }
     else if (current == "home")
@@ -358,7 +358,8 @@ int main()
                 receipt.joined = shutdown.joined;
                 receipt.cancelled = shutdown.cancelled_queued;
                 receipt.processed = shutdown.processed_after_join;
-                sys::log("[HUI ARCHIVE CONSUMER] shutdown worker joined=%d queued_cancelled=%zu processed=%llu",
+                sys::log("[HUI ARCHIVE CONSUMER] shutdown worker joined=%d queued_cancelled=%zu "
+                         "processed=%llu",
                          receipt.joined ? 1 : 0, receipt.cancelled,
                          static_cast<unsigned long long>(receipt.processed));
 
@@ -366,21 +367,25 @@ int main()
                 // 60 FPS frame loop or pretend a failed export succeeded.
                 std::string report = "PS5 UI SDK Consumer v0.6.2 - shutdown receipt\n";
                 char line[256];
-                std::snprintf(line, sizeof(line),
-                              "worker.joined=%d\nworker.cancelled_queued=%zu\nworker.processed=%llu\n",
-                              receipt.joined ? 1 : 0, receipt.cancelled,
-                              static_cast<unsigned long long>(receipt.processed));
+                std::snprintf(
+                    line, sizeof(line),
+                    "worker.joined=%d\nworker.cancelled_queued=%zu\nworker.processed=%llu\n",
+                    receipt.joined ? 1 : 0, receipt.cancelled,
+                    static_cast<unsigned long long>(receipt.processed));
                 report += line;
                 const auto &stats = images.statistics();
-                std::snprintf(line, sizeof(line),
-                              "stress=%u/%u\nimage.uploads=%llu\nimage.decode_errors=%llu\nimage.gpu_errors=%llu\n",
-                              stress.completed(), stress.target(),
-                              static_cast<unsigned long long>(stats.uploaded),
-                              static_cast<unsigned long long>(stats.decode_failures),
-                              static_cast<unsigned long long>(stats.upload_failures));
+                std::snprintf(
+                    line, sizeof(line),
+                    "stress=%u/"
+                    "%u\nimage.uploads=%llu\nimage.decode_errors=%llu\nimage.gpu_errors=%llu\n",
+                    stress.completed(), stress.target(),
+                    static_cast<unsigned long long>(stats.uploaded),
+                    static_cast<unsigned long long>(stats.decode_failures),
+                    static_cast<unsigned long long>(stats.upload_failures));
                 report += line;
                 std::snprintf(line, sizeof(line),
-                              "cache.cpu_kib=%zu\ncache.gpu_kib=%zu\nsoak.peak_cpu_kib=%zu\nsoak.peak_gpu_kib=%zu\n",
+                              "cache.cpu_kib=%zu\ncache.gpu_kib=%zu\nsoak.peak_cpu_kib=%zu\nsoak."
+                              "peak_gpu_kib=%zu\n",
                               cpu.used_bytes() / 1024, gpu.used_bytes() / 1024,
                               soak.peak_cpu_bytes() / 1024, soak.peak_gpu_bytes() / 1024);
                 report += line;
@@ -394,18 +399,15 @@ int main()
                 }
                 const auto export_result = sdk::export_diagnostics(
                     report,
-                    [](const std::string &directory) {
-                        return save::ensure_directory(directory);
-                    },
-                    [](const std::string &filepath, std::string_view contents) {
-                        return save::write_atomic(filepath, contents);
-                    });
+                    [](const std::string &directory) { return save::ensure_directory(directory); },
+                    [](const std::string &filepath, std::string_view contents)
+                    { return save::write_atomic(filepath, contents); });
                 receipt.saved = export_result.saved;
                 receipt.path = export_result.path;
                 receipt.ready = true;
                 nav.push("shutdown");
-                sys::log("[HUI ARCHIVE CONSUMER] receipt saved=%d path=%s",
-                         receipt.saved ? 1 : 0, receipt.saved ? receipt.path.c_str() : "NONE");
+                sys::log("[HUI ARCHIVE CONSUMER] receipt saved=%d path=%s", receipt.saved ? 1 : 0,
+                         receipt.saved ? receipt.path.c_str() : "NONE");
             }
             if (input.is_pressed(Action::back))
                 nav.back();

@@ -91,7 +91,7 @@ Console logs were not provided; specific cache invalidation sequencing,
 fresh file reads, clean exit, error recovery and suspend/resume require
 separate evidence. The library has no stable binary ABI guarantee yet.
 
-## v0.4.0 validation focus (pending PS5 test)
+## v0.4.0 validation focus and limitations
 
 - The test app now uses the reusable `sdk::WorkerThread` rather than a
   locally duplicated pthread class, and reports **processed background jobs**
@@ -102,8 +102,9 @@ separate evidence. The library has no stable binary ABI guarantee yet.
   EGL swap operation fails (controlled failure path; no native crash dump).
 - `JobQueue::cancel_queued()` marks cancelled-but-unstarted work `finished`
   when shutting down. Always cancel long-running jobs before worker.stop().
-- **Do not claim this version hardware validated until the new ZIP is booted
-  and tests repeated.** The screenshots and numbers above belong to v0.3.0.
+- Hardware launch/gallery/telemetry now validated as described below.
+  Cache invalidation event order, clean exit and full system suspend/resume
+  are still **not** verified by screenshots.
 
 ## v0.4.0 GitHub CI result (2026-10-24)
 
@@ -114,8 +115,25 @@ SDK Lab demo, archive-only consumer PS5 cross-link and ZIP structure/permissions
 
 [Download v0.4.0 PPSA99863 installer (artifact 12561971440)](https://github.com/Yahballon/ps5-homebrew-ui/actions/runs/40098174696/artifacts/12561971440).
 
-**No v0.4.0 PS5 hardware run has been claimed.** The old 16.68 ms/17.01 ms
-P99 numbers came from the v0.3.0 hardware test. For v0.4.0, verify all eight
-covers still reach READY, open frame telemetry and check processed job count,
-and test Square, Triangle, Back and Options. Report any failure or screenshot
-for the next SDK milestone.
+### Real PS5 smoke test: PASS (2026-10-24)
+
+The user supplied three console screenshots showing v0.4.0 on a real PS5:
+
+| Observed on screenshot | Result |
+| --- | --- |
+| Screen navigation | Home, Gallery and Telemetry displayed |
+| PNG covers | 8 of 8 visible, all READY |
+| Worker | RUNNING |
+| Processed background jobs | 8 |
+| CPU image cache | 8192 KiB, 8 images |
+| GPU texture cache | 8192 KiB, 8 textures |
+| Telemetry sample | 927 total frames |
+| Average / P99 / maximum | 16.68 / 17.01 / 17.11 ms |
+| Focus losses / returns | 0 / 0 |
+
+This confirms that the archive-linked library, new worker wrapper and
+telemetry screen operate on actual PS5 hardware without an observed regression
+in the screenshot sample (~60 FPS). The focus counter was **not** exercised
+by a focus-loss event. These screenshots do **not** yet verify Triangle GPU
+cache invalidation, Square fresh decoding, Options clean exit, long-run memory
+stability or OS suspend/resume. Those require event logs or dedicated tests.

@@ -29,6 +29,7 @@ replacement for the loader, and does not contain a second copy of the entry poin
 | `sdk/bmp.hpp` | Lightweight strict uncompressed 24/32-bit BMP decoder |
 | `sdk/image_decode.hpp` | Bounded PNG/JPEG/BMP/GIF/TGA/PNM decoder via vendored stb_image |
 | `sdk/async_images.hpp` | Nonblocking file-reader/decode/CPU-cache/GPU-upload cover pipeline |
+| `sdk/read_image_file.hpp` | Bounded file-reader adapter using existing `save::read_file` |
 | `sdk/texture_cache.hpp` | GPU budget/LRU cache via explicit render-thread callbacks |
 | `sdk/i18n.hpp` | Translatable keys, fallback catalog and named substitutions |
 | `sdk/paths.hpp` | Install/save/data/USB roots and validation of relative paths |
@@ -70,12 +71,7 @@ Cancelling a running job is cooperative. Join worker threads before destroying t
 
 ```cpp
 hui::sdk::AsyncImages covers(
-    jobs, cpu_cache, texture_cache,
-    [](const std::string &path, std::size_t max_bytes) {
-        // Run on the app's worker. Supply your own bounded read implementation
-        // for /data, /download0 and USB. It must never return > max_bytes.
-        return read_image_file(path, max_bytes);
-    });
+    jobs, cpu_cache, texture_cache, hui::sdk::read_image_file);
 
 covers.request("DOOM64", "/data/N64XY/covers/DOOM64.png");
 // One of the application's OS worker threads invokes jobs.process_one().
@@ -87,8 +83,9 @@ if (texture != 0) {
 }
 ```
 
-The pipeline does not create worker threads or provide the file-reader
-implementation; those are application responsibilities. It never calls OpenGL
+The pipeline does not create worker threads. The default
+`read_image_file` adapter uses `save::read_file` with a size limit; apps can
+supply an alternate callback for different storage/HTTP sources. It never calls OpenGL
 in the worker. It uses the queue's *unreported completion* mode, so its many
 jobs do not fill the shared completion-deque; other applications can still use
 `JobQueue::take_completed()` for their own jobs. Use `cancel_all()` before

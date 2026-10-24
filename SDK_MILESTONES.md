@@ -22,6 +22,7 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
 - [x] Add build-artifact packaging and image-cache regression tests.
 - [x] Add AsyncImages pipeline (bounded read callback, worker decode, CPU cache,
       capped GPU uploads per UI frame, cancel/status, LRU eviction recovery).
+- [x] Add a working file-read adapter via the existing bounded core file API.
 - [ ] GitHub Actions lint/unit/full PS5 app build passes on this branch.
 - [ ] Boot and test an SDK consumer on a modified PS5.
 

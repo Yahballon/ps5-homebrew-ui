@@ -13,6 +13,7 @@
 #include "sdk/jobs.hpp"
 #include "sdk/navigation.hpp"
 #include "sdk/paths.hpp"
+#include "sdk/read_image_file.hpp"
 #include "sdk/texture_cache.hpp"
 
 // Existing graphics and components remain opt-in for portability:

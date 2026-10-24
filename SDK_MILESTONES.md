@@ -92,8 +92,15 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       lint, host unit/integration tests, normal app, SDK archive, previous SDK
       Lab and archive-only PPSA99863 v0.4.0 cross-build/link and ZIP checks PASS.
       Installable SDK Consumer artifact: 12561971440 (PPSA99863.zip).
-- [ ] Verify v0.4.0 on PS5 hardware, especially cache reloading,
-      focus-interception counters, worker job count and clean exit.
+- [x] Real PS5 hardware smoke test for PPSA99863 v0.4.0 (user screenshots,
+      2026-10-24): home, gallery, and frame telemetry render correctly.
+      All 8 image entries READY, CPU and GPU cache 8192 KiB / 8 each,
+      worker RUNNING, 8 background jobs completed.
+      Sample at frame 927: average 16.68 ms, P99 17.01 ms,
+      max 17.11 ms (~60 FPS); focus losses/returns 0/0.
+- [ ] Dedicated PS5 tests for Triangle GPU invalidation/reload, Square fresh
+      PNG reads, focus-loss/return, Options clean exit, repeated long-running
+      cache stress and OS suspend/resume; screenshots do not establish these.
 - [ ] Add true OS suspend/resume hooks, re-create lost EGL resources,
       and native crash stack traces; these are not yet implemented.
 

@@ -10,6 +10,7 @@
 #include "sdk/bmp.hpp"
 #include "sdk/diagnostics.hpp"
 #include "sdk/diagnostic_export.hpp"
+#include "sdk/context_restart.hpp"
 #include "sdk/i18n.hpp"
 #include "sdk/image_decode.hpp"
 #include "sdk/image_stress.hpp"

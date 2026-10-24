@@ -364,30 +364,30 @@ int main()
 
                 // Export once after the worker joins; never write from the
                 // 60 FPS frame loop or pretend a failed export succeeded.
-                std::string report = "PS5 UI SDK Consumer v0.6.2 - shutdown receipt\\n";
+                std::string report = "PS5 UI SDK Consumer v0.6.2 - shutdown receipt\n";
                 char line[256];
                 std::snprintf(line, sizeof(line),
-                              "worker.joined=%d\\nworker.cancelled_queued=%zu\\nworker.processed=%llu\\n",
+                              "worker.joined=%d\nworker.cancelled_queued=%zu\nworker.processed=%llu\n",
                               receipt.joined ? 1 : 0, receipt.cancelled,
                               static_cast<unsigned long long>(receipt.processed));
                 report += line;
                 const auto &stats = images.statistics();
                 std::snprintf(line, sizeof(line),
-                              "stress=%u/%u\\nimage.uploads=%llu\\nimage.decode_errors=%llu\\nimage.gpu_errors=%llu\\n",
+                              "stress=%u/%u\nimage.uploads=%llu\nimage.decode_errors=%llu\nimage.gpu_errors=%llu\n",
                               stress.completed(), stress.target(),
                               static_cast<unsigned long long>(stats.uploaded),
                               static_cast<unsigned long long>(stats.decode_failures),
                               static_cast<unsigned long long>(stats.upload_failures));
                 report += line;
                 std::snprintf(line, sizeof(line),
-                              "cache.cpu_kib=%zu\\ncache.gpu_kib=%zu\\nsoak.peak_cpu_kib=%zu\\nsoak.peak_gpu_kib=%zu\\n",
+                              "cache.cpu_kib=%zu\ncache.gpu_kib=%zu\nsoak.peak_cpu_kib=%zu\nsoak.peak_gpu_kib=%zu\n",
                               cpu.used_bytes() / 1024, gpu.used_bytes() / 1024,
                               soak.peak_cpu_bytes() / 1024, soak.peak_gpu_bytes() / 1024);
                 report += line;
                 for (std::size_t i = 0; i < breadcrumbs.size(); ++i)
                 {
                     const auto *event = breadcrumbs.at(i);
-                    std::snprintf(line, sizeof(line), "breadcrumb=%llu %s %s\\n",
+                    std::snprintf(line, sizeof(line), "breadcrumb=%llu %s %s\n",
                                   static_cast<unsigned long long>(event->timestamp_us),
                                   event->category.data(), event->message.data());
                     report += line;

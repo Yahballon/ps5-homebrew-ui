@@ -11,6 +11,7 @@
 #include "sdk/diagnostics.hpp"
 #include "sdk/i18n.hpp"
 #include "sdk/image_decode.hpp"
+#include "sdk/image_stress.hpp"
 #include "sdk/jobs.hpp"
 #include "sdk/lifecycle.hpp"
 #include "sdk/navigation.hpp"

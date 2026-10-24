@@ -7,6 +7,7 @@
 #include "sdk/async_images.hpp"
 #include "sdk/breadcrumbs.hpp"
 #include "sdk/lifecycle.hpp"
+#include "sdk/image_stress.hpp"
 #include "sdk/worker_thread.hpp"
 #include "sdk/diagnostics.hpp"
 #include "sdk/navigation.hpp"
@@ -85,7 +86,8 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
                const hui::sdk::Navigator &navigation, hui::sdk::AsyncImages &images,
                const hui::sdk::ImageCache &cpu, const hui::sdk::TextureCache &gpu,
                const hui::sdk::FrameMonitor &frames, bool worker_running,
-               const hui::sdk::LifecycleMonitor &lifecycle, std::uint64_t processed_jobs,
+               const hui::sdk::LifecycleMonitor &lifecycle, const hui::sdk::ImageStress &stress,
+               std::uint64_t processed_jobs,
                std::size_t selected, std::uint64_t frame_count)
 {
     const Color foreground = Color::rgb(0xffffff);
@@ -97,7 +99,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
     draw.rounded_rect({72, 53, 1776, 140}, 24, card);
     draw.rounded_rect({72, 53, 13, 140}, 6, mint);
     label(draw, bold, "PS5 UI SDK  /  ARCHIVE CONSUMER", 110, 117, 42, foreground);
-    label(draw, regular, "by YAHBALLON  |  v0.4.0  |  libps5hui.a linked", 114, 161, 23, dim);
+    label(draw, regular, "by YAHBALLON  |  v0.5.0  |  libps5hui.a linked", 114, 161, 23, dim);
 
     const auto *route = navigation.current();
     const std::string current = route ? route->name : "home";
@@ -114,6 +116,15 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
     else if (current == "covers")
     {
         label(draw, bold, "PNG DECODING  /  GPU CACHE", 110, 271, 37, foreground);
+        if (stress.target())
+        {
+            char progress[80];
+            std::snprintf(progress, sizeof(progress), "STRESS %u/%u %s",
+                          stress.completed(), stress.target(),
+                          stress.running() ? "RUNNING" : stress.failed() ? "FAIL" : "PASS");
+            label(draw, bold, progress, 1320, 270, 22,
+                  stress.failed() ? Color::rgb(0xff7e8b) : mint);
+        }
         label(draw, regular, "D-Pad selects covers; Square rereads PNG; Triangle clears GPU.", 110,
               317, 24, dim);
         for (std::size_t index = 0; index < kTiles; ++index)
@@ -169,11 +180,22 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
         std::snprintf(number, sizeof(number), "Focus losses / returns: %u / %u",
                       lifecycle.focus_losses(), lifecycle.focus_returns());
         label(draw, regular, number, 925, 788, 23, dim);
+        const auto &stats = images.statistics();
+        std::snprintf(number, sizeof(number), "Uploads %llu  Errors: decode %llu / GPU %llu",
+                      static_cast<unsigned long long>(stats.uploaded),
+                      static_cast<unsigned long long>(stats.decode_failures),
+                      static_cast<unsigned long long>(stats.upload_failures));
+        label(draw, regular, number, 225, 723, 21, dim);
+        std::snprintf(number, sizeof(number), "STRESS %u/%u %s", stress.completed(),
+                      stress.target(), stress.running() ? "RUNNING" :
+                      stress.failed() ? "FAILED" : "IDLE / PASS");
+        label(draw, regular, number, 225, 784, 23,
+              stress.failed() ? Color::rgb(0xff7e8b) : mint);
     }
     draw.rounded_rect({73, 966, 1775, 65}, 20, Color::rgb(0x102639));
     label(draw, regular,
           "X  OPEN / NEXT     O  BACK     D-PAD  SELECT     SQUARE  RELOAD     "
-          "TRIANGLE  CLEAR GPU     OPTIONS  EXIT",
+          "TRIANGLE  CLEAR GPU     R1  STRESS     OPTIONS  EXIT",
           106, 1008, 22, dim);
 }
 
@@ -182,7 +204,7 @@ void draw_page(DrawList &draw, const Face &regular, const Face &bold,
 int main()
 {
     using namespace hui;
-    sys::log("[HUI ARCHIVE CONSUMER] start v0.4.0 libps5hui.a");
+    sys::log("[HUI ARCHIVE CONSUMER] start v0.5.0 libps5hui.a");
     ps5::Display display;
     if (!display.open(1920, 1080))
     {
@@ -220,6 +242,7 @@ int main()
     sdk::Navigator nav;
     nav.set_root("home");
     sdk::FrameMonitor frametimes;
+    sdk::ImageStress stress;
     gfx::DrawList frame;
     std::uint64_t frame_count = 0;
     std::size_t selected = 0;
@@ -235,6 +258,14 @@ int main()
             std::snprintf(key, sizeof(key), "arch-%zu", i);
             images.request(key, kImagePath);
         }
+    };
+
+    const auto reload_all = [&]()
+    {
+        images.reset();
+        cpu.clear();
+        gpu.clear();
+        load_covers();
     };
 
     for (;;)
@@ -296,6 +327,8 @@ int main()
             }
             if (input.is_pressed(Action::north))
             {
+                stress.cancel();
+                images.reset();
                 gpu.clear();
                 load_covers();
                 breadcrumbs.record(static_cast<std::uint64_t>(now), "cache",
@@ -304,19 +337,66 @@ int main()
             }
             if (input.is_pressed(Action::west))
             {
-                // Already-running decodes remain valid and finish normally.
-                // Clear caches so READY images must be decoded again.
-                cpu.clear();
-                gpu.clear();
-                load_covers();
+                stress.cancel();
+                reload_all();
                 breadcrumbs.record(static_cast<std::uint64_t>(now), "cache",
                                    "CPU/GPU reload requested");
                 sys::log("[HUI ARCHIVE CONSUMER] cache re-request");
             }
+            if (input.is_pressed(Action::page_next) && worker_ok)
+            {
+                if (stress.running())
+                {
+                    stress.cancel();
+                    sys::log("[HUI ARCHIVE CONSUMER] stress cancelled");
+                }
+                else if (stress.start(20, static_cast<std::uint64_t>(now)))
+                {
+                    images.reset_statistics();
+                    reload_all();
+                    nav.pop_to("covers");
+                    sys::log("[HUI ARCHIVE CONSUMER] stress 20 rounds started");
+                }
+            }
         }
 
         images.pump(1);
-        draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok, lifecycle,
+        if (stress.running())
+        {
+            bool all_ready = true;
+            bool any_failed = false;
+            for (std::size_t i = 0; i < kTiles; ++i)
+            {
+                char key[32];
+                std::snprintf(key, sizeof(key), "arch-%zu", i);
+                const auto state = images.status(key);
+                all_ready &= state == sdk::ImageLoadState::ready;
+                any_failed |= state == sdk::ImageLoadState::failed ||
+                              state == sdk::ImageLoadState::cancelled;
+            }
+            const auto event = stress.tick(all_ready, any_failed,
+                                           static_cast<std::uint64_t>(now));
+            if (event == sdk::StressEvent::reload)
+            {
+                reload_all();
+                sys::log("[HUI ARCHIVE CONSUMER] stress %u/%u",
+                         stress.completed(), stress.target());
+            }
+            else if (event == sdk::StressEvent::completed ||
+                     event == sdk::StressEvent::failed)
+            {
+                const auto &stats = images.statistics();
+                sys::log("[HUI ARCHIVE CONSUMER] stress %s %u/%u uploads=%llu decode_errors=%llu gpu_errors=%llu",
+                         event == sdk::StressEvent::completed ? "PASS" : "FAIL",
+                         stress.completed(), stress.target(),
+                         static_cast<unsigned long long>(stats.uploaded),
+                         static_cast<unsigned long long>(stats.decode_failures),
+                         static_cast<unsigned long long>(stats.upload_failures));
+                breadcrumbs.record(static_cast<std::uint64_t>(now), "stress",
+                                   event == sdk::StressEvent::completed ? "PASS" : "FAIL");
+            }
+        }
+        draw_page(frame, regular, bold, nav, images, cpu, gpu, frametimes, worker_ok, lifecycle, stress,
                   worker.processed_jobs(), selected, frame_count);
         renderer.begin();
         renderer.draw(frame);

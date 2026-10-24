@@ -24,7 +24,12 @@ Last updated: 2026-10-24. Development branch: `feature/ui-sdk-foundation-2026102
       capped GPU uploads per UI frame, cancel/status, LRU eviction recovery).
 - [x] Add a working file-read adapter via the existing bounded core file API.
 - [x] Ensure cached-cover reuploads obey pump()'s upload-attempt limit.
-- [ ] GitHub Actions lint/unit/full PS5 app build passes on this branch.
+- [x] SDK smoke, full lint, GoogleTest and host tooling integration tests pass
+      on GitHub Actions (run 40091979167); native cross-build previously blocked
+      by HTTP 404 downloading the original ps5-opengl SDK.
+- [x] Add independently mirrored, SHA-256-pinned SDK 1.0.2 fallback while
+      retaining both original archive and extracted manifest verification.
+- [ ] Cross-build the PS5 title and archive SDK successfully on this branch.
 - [ ] Boot and test an SDK consumer on a modified PS5.
 
 ## Production blockers, in priority order

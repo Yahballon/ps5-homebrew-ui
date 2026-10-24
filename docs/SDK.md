@@ -12,7 +12,11 @@ make sdk
 # dist/ps5-homebrew-ui-sdk.tar.gz
 ```
 
-This requires the same public PS5 toolchain and OpenGL runtime as `make app`. The target
+This requires the same public PS5 toolchain and OpenGL runtime as `make app`.
+The pinned `ps5-opengl` SDK 1.0.2 download tries the original upstream
+release first, then a third-party archive mirror when upstream is unavailable.
+Both paths are checked against the **same pinned archive SHA-256**, and the
+extracted manifest has its own pinned digest. Never bypass these checks. The target
 builds the PS5 app once, then archives the existing platform-neutral and PS5 backend object
 files *without* the demo app's `main.cpp`, `app/`, `concepts/` or `demo/`. The package
 includes headers, original fonts/sounds, notices, and the runtime shim sources. Link the

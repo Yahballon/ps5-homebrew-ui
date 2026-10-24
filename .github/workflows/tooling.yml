@@ -6,7 +6,10 @@ name: Build
 
 on:
   # A build on main is started by hand (Run workflow): pushes to main build nothing.
+  # SDK feature branches build on push as well as when a PR is opened.
   push:
+    branches:
+      - "feature/ui-sdk-*"
     tags:
       - "[0-9][0-9].[0-9][0-9][0-9].[0-9][0-9][0-9]"
   pull_request:
@@ -156,6 +159,9 @@ jobs:
       - name: Build the release folder and ZIP
         run: make app
 
+      - name: Package reusable UI SDK
+        run: make sdk
+
       - name: Report compiler cache statistics
         if: always()
         run: ccache --show-stats
@@ -209,6 +215,96 @@ jobs:
           path: |
             dist/${{ env.TITLE_ID }}.zip
             dist/SHA256SUMS
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Upload reusable SDK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.label.outputs.artifact }}-sdk
+          path: dist/ps5-homebrew-ui-sdk.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      # The demo gets its OWN title ID. Only development branches / PRs build it.
+      # A production version tag still publishes only the original stable ZIP.
+      - name: Build standalone SDK Lab demo
+        if: github.ref_type != 'tag'
+        run: make sdk-demo
+
+      - name: Verify SDK Lab installer
+        if: github.ref_type != 'tag'
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          path = "dist/PPSA99862.zip"
+          with zipfile.ZipFile(path) as archive:
+              assert archive.testzip() is None
+              assert "PPSA99862/eboot.bin" in archive.namelist()
+              assert "PPSA99862/sce_sys/param.json" in archive.namelist()
+              assert all(name.startswith("PPSA99862/") for name in archive.namelist())
+              assert all((i.external_attr >> 16) & 0o777 == 0o777
+                         for i in archive.infolist())
+          print(f"{path}: tested installer structure and permissions")
+          PY
+
+      - name: Upload standalone SDK Lab
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.label.outputs.artifact }}-sdk-demo
+          path: dist/PPSA99862.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      # Distinct archive-only consumer: do not compile any UI implementation.
+      - name: Build archive-only SDK consumer
+        if: github.ref_type != 'tag'
+        run: make sdk-consumer
+
+      - name: Verify archive-only consumer and ZIP
+        if: github.ref_type != 'tag'
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import zipfile
+
+          ninja = pathlib.Path("build/app.ninja").read_text()
+          source_files = (
+              "examples/sdk-consumer/main.cpp",
+              "src/runtime/app_heap.c",
+              "src/runtime/runtime_shims.c",
+          )
+          for source in source_files:
+              assert source in ninja, f"Expected compiled source missing: {source}"
+          forbidden = ("src/app/", "src/gfx/", "src/core/", "src/ui/",
+                       "src/audio/", "src/sdk/", "src/platform/ps5/")
+          for source in forbidden:
+              assert source not in ninja, f"SDK implementation compiled in consumer: {source}"
+          assert "dist/sdk/lib/libps5hui.a" in ninja, "SDK archive omitted from link"
+
+          archive = pathlib.Path("dist/PPSA99863.zip")
+          assert archive.is_file()
+          with zipfile.ZipFile(archive) as package:
+              assert package.testzip() is None
+              names = package.namelist()
+              assert "PPSA99863/eboot.bin" in names
+              assert "PPSA99863/sce_sys/param.json" in names
+              assert all(name.startswith("PPSA99863/") for name in names)
+              assert all((item.external_attr >> 16) & 0o777 == 0o777
+                         for item in package.infolist())
+          print("Archive-only SDK consumer: linked, packaged and verified")
+          PY
+
+      - name: Upload archive-only SDK consumer
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.label.outputs.artifact }}-sdk-consumer
+          path: dist/PPSA99863.zip
           if-no-files-found: error
           compression-level: 0
           retention-days: 14

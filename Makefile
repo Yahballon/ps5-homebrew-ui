@@ -8,6 +8,9 @@ SHELL := /bin/bash
 -include .env
 
 APP_DEFINITIONS ?=
+APP_SOURCE_FILES ?=
+APP_SDK_ONLY ?= 0
+APP_PARAM_FILE ?= sce_sys/param.json
 APP_INCLUDE_PATHS ?=
 APP_STATIC_ARCHIVES ?=
 APP_IMPORT_STUBS ?=
@@ -18,7 +21,12 @@ PS5_OPENGL_PREFIX ?=
 # The app always builds against ps5-opengl; user APP_* values append.
 OPENGL_SDK := .deps/ps5-opengl/current
 override APP_DEFINITIONS := $(strip GL_GLEXT_PROTOTYPES=1 $(APP_DEFINITIONS))
+ifeq ($(APP_SDK_ONLY),1)
+# Archive-only consumers get SDK public headers, not the monorepo src directory.
+override APP_INCLUDE_PATHS := $(strip $(OPENGL_SDK)/include $(APP_INCLUDE_PATHS))
+else
 override APP_INCLUDE_PATHS := $(strip src $(OPENGL_SDK)/include $(APP_INCLUDE_PATHS))
+endif
 override APP_STATIC_ARCHIVES := $(strip .deps/ps5-opengl/libps5opengl-group.a $(APP_STATIC_ARCHIVES))
 override APP_IMPORT_STUBS := $(strip $(OPENGL_SDK)/lib/libSceAgc.so \
 	$(OPENGL_SDK)/lib/libSceAgcDriver.so $(APP_IMPORT_STUBS))
@@ -43,6 +51,7 @@ BUILD_JOBS ?= $(shell nproc 2>/dev/null || echo 2)
 USE_CCACHE ?= 1
 export BUILD_JOBS USE_CCACHE
 export HOST_CXX HOST_TEST_CXXFLAGS HOST_TEST_LDFLAGS
+export APP_PARAM_FILE APP_SOURCE_FILES APP_SDK_ONLY
 export APP_DEFINITIONS APP_INCLUDE_PATHS APP_STATIC_ARCHIVES APP_IMPORT_STUBS APP_RUNTIME_MODULES
 export PS5_OPENGL_PREFIX
 export PACBREW_PACKAGES PACBREW_INCLUDE_PATHS PACBREW_STATIC_ARCHIVES
@@ -198,3 +207,26 @@ help:
 	  'Build speed:         BUILD_JOBS defaults to all CPUs; USE_CCACHE=0 disables ccache' \
 	  'make clean           Remove build/, dist/, and generated libc.prx' \
 	  'make distclean       Also remove the ignored .deps/ cache'
+
+# Experimental reusable SDK package (builds the same cross-compiled objects).
+.PHONY: sdk
+sdk: app
+	bash tools/pack-sdk.sh
+
+# Separate, installable PS5 SDK demo (not the default homebrew UI title).
+.PHONY: sdk-demo
+sdk-demo: $(RUNTIME) opengl
+	@printf '%s\n' '==> [sdk-demo] Building PPSA99862 native demo title'
+	@$(MAKE) app APP_DEFINITIONS="HUI_SDK_DEMO=1" APP_PARAM_FILE="examples/sdk-demo/param.json"
+
+# Build a genuine archive-linked consumer: only this app's main.cpp and the
+# native runtime glue are compiled. UI renderer/controller/storage/decoder symbols
+# must all resolve from dist/sdk/lib/libps5hui.a.
+.PHONY: sdk-consumer
+sdk-consumer: sdk
+	@printf '%s\n' '==> [sdk-consumer] Linking packaged libps5hui.a into PPSA99863'
+	@$(MAKE) app APP_SDK_ONLY=1 \
+		APP_SOURCE_FILES="examples/sdk-consumer/main.cpp src/runtime/app_heap.c src/runtime/runtime_shims.c" \
+		APP_INCLUDE_PATHS="dist/sdk/include" \
+		APP_STATIC_ARCHIVES="dist/sdk/lib/libps5hui.a" \
+		APP_PARAM_FILE="examples/sdk-consumer/param.json"

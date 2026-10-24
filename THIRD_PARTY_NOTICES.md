@@ -67,6 +67,17 @@ domain or MIT; see `src/third_party/stb/LICENSE`), vendored at the commit in
 `src/third_party/stb/UPSTREAM` by `tools/update-stb.sh`. It is linked into the
 PS5 application.
 
+## Image decoding
+
+`src/third_party/stb/stb_image.h` is the stb_image v2.30 decoder by Sean
+Barrett and contributors, sourced from
+[nothings/stb](https://github.com/nothings/stb) at commit
+`003501f6d7a8668ce8b6d875e34dd97ad0d5d5b5`. It is dual-licensed as
+public domain or MIT. We select the MIT terms, reproduced in
+`src/third_party/stb/LICENSE`. The project-owned `image.c` instantiation
+links into the PS5 build, and `src/sdk/image_decode.cpp` applies
+decoded-size limits. This decoder does not support WebP.
+
 ## Shader distance functions
 
 The fragment shader in `src/gfx/gl_batch.cpp` adapts the two-dimensional

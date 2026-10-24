@@ -167,6 +167,32 @@ app, open **Theme Lab** and press **L2** / **R2**.
 </table>
 <!-- END:themes -->
 
+## PS5 SDK Lab demo (separate installer)
+
+A developer test title `PPSA99862` exercises screen navigation, native worker
+thread image decoding, CPU and GPU image caches, one-upload-per-frame scheduling,
+DualSense controls and performance telemetry. It does **not** overwrite the
+regular Homebrew UI Lab `PPSA99050` app.
+
+Use `make sdk-demo` and install `dist/PPSA99862.zip`. PR/feature-branch Actions
+also publish an `-sdk-demo` artifact after full testing. See
+[the console testing guide](examples/sdk-demo/README.md).
+
+## Archive-linked independent SDK consumer
+
+`make sdk-consumer` creates `PPSA99863.zip`: a completely separate title
+that **compiles only its own main.cpp and PS5 runtime bootstrap C files**,
+then links the packaged `libps5hui.a` and public headers. See
+[examples/sdk-consumer/README.md](examples/sdk-consumer/README.md).
+The main UI Lab (`PPSA99050`) and prior SDK Lab (`PPSA99862`) are unchanged.
+
+## Reusable SDK (experimental)
+
+The reusable `libps5hui.a` package and the portable SDK helpers can be built with
+`make sdk`. See [docs/SDK.md](docs/SDK.md) for packaging, background jobs,
+GPU image caching, PNG/JPEG/BMP decoding, navigation, localization, diagnostics, supported APIs and remaining
+production blockers. This is not yet a stable, hardware-validated SDK release.
+
 ## Quick start
 
 You need Linux or WSL with `clang-18`, `ninja`, `make` and `python3`. The

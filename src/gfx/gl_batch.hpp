@@ -11,6 +11,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 namespace hui::gfx
 {
@@ -36,6 +37,10 @@ class GlBatch
     std::uint32_t create_font_texture(const Font &font);
     // Uploads RGBA8 pixels as a single-level texture; returns its name.
     std::uint32_t create_texture(int width, int height, const std::uint8_t *rgba);
+    // Destroy a texture created by create_texture. Call on the GL/render
+    // thread after the last DrawList referring to it has been presented.
+    // Font texture handles are deliberately not destroyable by consumers.
+    bool destroy_texture(std::uint32_t texture);
 
     // Draws into the currently bound framebuffer of the given size.
     void draw(const DrawList &list, const Viewport &viewport, int surface_width,
@@ -58,6 +63,8 @@ class GlBatch
     std::size_t draw_calls_ = 0;
     GLuint font_textures_[kFontSlots] = {};
     std::uint32_t font_count_ = 0;
+    std::vector<GLuint> user_textures_;       // RGBA image textures owned by this batch
+    std::vector<GLuint> extra_font_textures_; // fonts beyond the six reserved slots
 };
 
 } // namespace hui::gfx

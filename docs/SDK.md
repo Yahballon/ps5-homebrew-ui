@@ -1,0 +1,235 @@
+# Reusable PS5 Homebrew UI SDK (experimental)
+
+This repository contains the native C++ OpenGL renderer and 99 reusable UI components. The
+new `src/sdk/` headers add **portable application services**; they are not a replacement
+renderer and are not yet a stable ABI.
+
+## Make the library
+
+```sh
+make sdk
+# dist/sdk/lib/libps5hui.a
+# dist/ps5-homebrew-ui-sdk.tar.gz
+```
+
+This requires the same public PS5 toolchain and OpenGL runtime as `make app`.
+The pinned `ps5-opengl` SDK 1.0.2 download tries the original upstream
+release first, then a third-party archive mirror when upstream is unavailable.
+Both paths are checked against the **same pinned archive SHA-256**, and the
+extracted manifest has its own pinned digest. Never bypass these checks. The target
+builds the PS5 app once, then archives the existing platform-neutral and PS5 backend object
+files *without* the demo app's `main.cpp`, `app/`, `concepts/` or `demo/`. The package
+includes headers, original fonts/sounds, notices, and the runtime shim sources. Link the
+archive with the matching PS5 SDK / ps5-opengl dependencies. It is **not** a drop-in
+replacement for the loader, and does not contain a second copy of the entry point.
+
+## Public portable services
+
+| Header | Facility |
+| --- | --- |
+| `sdk/navigation.hpp` | Bounded, explicit screen/back-stack state and revisions |
+| `sdk/jobs.hpp` | Multi-producer worker queue, cancellation tokens and progress |
+| `sdk/assets.hpp` | Validated decoded RGBA images and memory-bounded CPU LRU cache |
+| `sdk/bmp.hpp` | Lightweight strict uncompressed 24/32-bit BMP decoder |
+| `sdk/image_decode.hpp` | Bounded PNG/JPEG/BMP/GIF/TGA/PNM decoder via vendored stb_image |
+| `sdk/async_images.hpp` | Nonblocking file-reader/decode/CPU-cache/GPU-upload cover pipeline |
+| `sdk/read_image_file.hpp` | Bounded file-reader adapter using existing `save::read_file` |
+| `sdk/texture_cache.hpp` | GPU budget/LRU cache via explicit render-thread callbacks |
+| `sdk/i18n.hpp` | Translatable keys, fallback catalog and named substitutions |
+| `sdk/paths.hpp` | Install/save/data/USB roots and validation of relative paths |
+| `sdk/diagnostics.hpp` | Allocation-free rolling frame times, p99 and budget misses |
+| `sdk/sdk.hpp` | Include-all facade for the portable facilities |
+
+Existing `ui/components.hpp`, `gfx/renderer.hpp`, `core/input.hpp`, `core/save_file.hpp`
+and `platform/ps5/*` remain the real UI and platform APIs. Use their existing documentation.
+
+### Main-thread / worker contract
+
+```cpp
+hui::sdk::JobQueue jobs;
+auto token = jobs.submit([](hui::sdk::JobQueue::Context &ctx) {
+    // Do file I/O and decode into CPU memory; check ctx.cancelled() often.
+    ctx.set_progress(0.5f);
+});
+// A platform worker thread calls jobs.process_one() until shutdown.
+// The UI frame polls jobs.take_completed() and uploads finished images with
+// renderer.batch().create_texture(...); do not call OpenGL on the worker.
+
+hui::sdk::TextureCache texture_cache(
+    64u * 1024u * 1024u,
+    [&](const hui::sdk::Image &image) {
+        return renderer.batch().create_texture(image.width, image.height, image.rgba.data());
+    },
+    [&](std::uint32_t texture) { renderer.batch().destroy_texture(texture); });
+// texture_cache.get_or_upload("cover", image) on the render thread.
+// texture_cache.clear() before renderer.release().
+// On context loss, texture_cache.context_lost() must be called WITHOUT GL calls.
+```
+
+The queue intentionally does **not** create OS threads: apps supply platform threads
+with deliberate stack sizes and scheduling. A token's `finished()` means work returned,
+not that a download succeeded. App callbacks publish results to the UI thread.
+Cancelling a running job is cooperative. Join worker threads before destroying the queue.
+
+### Putting the decoder, worker queue, and GPU upload together
+
+```cpp
+hui::sdk::AsyncImages covers(
+    jobs, cpu_cache, texture_cache, hui::sdk::read_image_file);
+
+covers.request("DOOM64", "/data/N64XY/covers/DOOM64.png");
+// One of the application's OS worker threads invokes jobs.process_one().
+// Every render frame, on the UI thread:
+covers.pump(2); // upload at most two decoded covers
+const std::uint32_t texture = covers.texture("DOOM64");
+if (texture != 0) {
+    // draw the cover via gfx::DrawList::image(...);
+}
+```
+
+The pipeline does not create worker threads. The default
+`read_image_file` adapter uses `save::read_file` with a size limit; apps can
+supply an alternate callback for different storage/HTTP sources. It never calls OpenGL
+in the worker. It uses the queue's *unreported completion* mode, so its many
+jobs do not fill the shared completion-deque; other applications can still use
+`JobQueue::take_completed()` for their own jobs. Use `cancel_all()` before
+shutting down the workers, then join them before destructing the queue. The
+GPU cache may evict textures once its budget is reached. Re-requests of a cover
+cached in RAM are queued for a capped UI-thread re-upload, not uploaded during
+`request()`. Draw only texture handles retrieved **this frame**, not stale
+stored texture IDs.
+
+### Runtime storage
+
+`StoragePaths` defaults to `/app0`, `/download0`, `/data`, and `/mnt/usb0`.
+These are *names*, not a promise that a given sandbox can access them. Elevated titles
+often need `set_root(install, "/data/homebrew/PPSA...")`. `resolve` rejects
+relative traversal but is not a filesystem sandbox: symlinks and race conditions must
+also be considered by the file-accessing application.
+
+## Worker ownership and bounded diagnostics (v0.4.0)
+
+`sdk/worker_thread.hpp` provides one owned pthread with explicit stack size,
+worker join and a platform-injected idle callback:
+
+```cpp
+hui::sdk::JobQueue queue;
+hui::sdk::WorkerThread worker(queue, &hui::sys::sleep_us,
+                              512u * 1024u /* pthread stack */);
+const bool started = worker.start();
+// JobQueue::submit() work is consumed by this thread.
+// Before closing the app or GL context:
+images.cancel_all();   // cooperative cancellation of in-flight image jobs
+worker.stop();          // acknowledge queued jobs, stop, join
+gpu.clear();            // GL context must still be valid
+```
+
+`JobQueue::cancel_queued()` marks unstarted handles cancelled and finished,
+with completion notifications for jobs submitted with
+`report_completion=true`. Running jobs are cooperative and may finish before
+`stop()` returns; avoid blocking file/network callbacks that ignore
+cancellation.
+
+`sdk/lifecycle.hpp` tracks only *observed controller interception* and
+*render swap failure*, and `sdk/breadcrumbs.hpp` keeps the latest 32 debug
+events in a bounded ring without per-frame file I/O. A normal controlled
+failure can flush them into the existing runtime log once. **These are not
+native crash dumps, signal handlers, real PS5 suspend callbacks or automatic
+EGL resource recovery.** Those remain production blockers.
+
+## v0.5.0 image cache recovery and stress diagnostics
+
+`sdk::AsyncImages::reset()` cancels abandoned handles and removes pending
+image-result references, allowing a fresh request with the same cache key
+without an old decode overwriting the UI state. It does not clear the
+underlying GPU/CPU caches: call `TextureCache::clear()` with an active
+GL context and `ImageCache::clear()` separately when a **full** reload
+is desired. Canceled jobs may still briefly exist in the shared worker
+queue but their private result data is safely discarded.
+
+`AsyncImages::statistics()` returns UI-thread counters for requests,
+successful uploads, decode failures, GPU upload failures and cancellation.
+No disk writes or locks occur during snapshot reads.
+
+`sdk::ImageStress` is a bounded testing state machine, not a production
+automatic retry system. The PPSA99863 v0.5.0 consumer uses it to run
+20 full read/decode/GPU-cache cycles when R1 is pressed in the gallery.
+Each cycle is limited to 15 seconds, and each success/failure transition
+is logged once; no per-frame storage logs are added.
+
+## Remaining v1.0 blockers — do not misrepresent as implemented
+
+- **WebP** decoding, priority scheduling and fully integrated platform worker threads. The
+  new `decode_image` handles PNG/JPEG/BMP/GIF/TGA/PNM through stb_image with
+  configurable input-size and decoded-pixel limits (GIF: first frame only).
+  The lightweight `decode_bmp` handles **uncompressed 24/32-bit BMP**.
+  `ImageCache` owns CPU RGBA images, while `TextureCache` uploads/evicts
+  through explicit GL callbacks. `GlBatch::destroy_texture` now releases image textures; callers
+  must not draw texture handles after eviction. The cache must be cleared
+  *before* destroying the GL context.
+- A production multi-worker pool with priority queues, structured errors and
+  full cancellation on real OS lifecycle transitions. A simple owned pthread
+  worker and join/cancel of *queued* work now exist.
+- Complete multilingual shaping / bidirectional text (dictionary substitution is **not**
+  font shaping or pluralization), locale number/date formats, and OS accessibility hooks.
+- Signal-safe native crash dumps and symbolication, robust suspend/resume/system overlays,
+  multi-user pad handling, and recovery when EGL contexts are recreated.
+- A stable standalone sample app that links only `libps5hui.a` with automated console
+  validation; stable ABI/version policy and semver testing.
+- Full PNG screenshots during live gameplay, image/asset hot reload, JSON theme editing,
+  and optional renderer ports.
+
+The portable service APIs have unit tests in `tests/unit/sdk_test.cpp`,
+`tests/unit/sdk_images_test.cpp`, `tests/unit/sdk_decode_test.cpp`, and `tests/unit/sdk_async_images_test.cpp`. Hardware
+performance of the integrated SDK is **not verified** until CI and a console run succeed.
+
+## Licensing
+
+GPL-3.0-or-later; see `LICENSE` and `THIRD_PARTY_NOTICES.md`. Applications linked with
+the SDK must satisfy the license terms.
+
+
+## Bounded long-run test telemetry (v0.6.0)
+
+`sdk/soak_monitor.hpp` is a zero-allocation, render-thread-only monitor for
+**CPU decoded-image and GPU texture cache usage**, elapsed time, peak pending
+image loads, frames over 33.334 ms, and the worst frame delta. The independent
+SDK consumer exposes this monitor during R1 (20 waves) or R2 (200 waves).
+It avoids disk writes during frame observation; console progress logging is
+throttled to one record per 20 waves.
+
+**Important limits:** Cache byte counts reflect image cache allocations,
+not actual process-heap use, resident memory, external GL allocations or all
+physical VRAM. Long-run cache reload stability does not establish complete
+leak freedom. OS suspend/resume, EGL recreation, and native crash stack dumps
+are still separate v1.0 milestones.
+
+## Verifiable shutdown receipt (v0.6.2)
+
+`sdk/diagnostic_export.hpp` selects a writable, externally browsable
+diagnostic receipt folder before falling back to the title sandbox. The
+library utility accepts `ensure_directory` and `write_atomic` callbacks,
+so host regression tests can validate destination priority and failures
+without a PS5. It never claims the file exists until the writer succeeds.
+
+The independent SDK Consumer v0.6.2 saves an explicit receipt on Options
+shutdown and then renders its worker join outcome and successful export
+path on the television. Press X to complete app exit. This is a
+**controlled shutdown** report, not a native crash dump. Diagnostic
+writes happen once, after joining the worker, never inside a render frame.
+
+## v0.7.0 explicit render-context restart testing
+
+`sdk/context_restart.hpp` models the **ordered, controlled teardown**
+of GPU textures, Renderer, and EGL before recreating the display,
+Renderer, fonts, and image requests. The helper has regression tests
+for success and failures during display open, renderer initialization,
+and font restoration. No GL calls are used by the SDK sequence itself;
+all platform effects are injected callback operations.
+
+The independent PPSA99863 consumer performs this sequence via L1
+while the old context is valid. The new EGL/GL diagnostic fields
+are included in the existing atomic, verified `shutdown.txt` receipt
+under /data where writable. This does **not** turn controller focus
+interception into PS5 OS suspend/resume, nor does it automatically
+recover an EGL context that has already been lost.

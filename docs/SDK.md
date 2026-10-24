@@ -203,3 +203,17 @@ not actual process-heap use, resident memory, external GL allocations or all
 physical VRAM. Long-run cache reload stability does not establish complete
 leak freedom. OS suspend/resume, EGL recreation, and native crash stack dumps
 are still separate v1.0 milestones.
+
+## Verifiable shutdown receipt (v0.6.2)
+
+`sdk/diagnostic_export.hpp` selects a writable, externally browsable
+diagnostic receipt folder before falling back to the title sandbox. The
+library utility accepts `ensure_directory` and `write_atomic` callbacks,
+so host regression tests can validate destination priority and failures
+without a PS5. It never claims the file exists until the writer succeeds.
+
+The independent SDK Consumer v0.6.2 saves an explicit receipt on Options
+shutdown and then renders its worker join outcome and successful export
+path on the television. Press X to complete app exit. This is a
+**controlled shutdown** report, not a native crash dump. Diagnostic
+writes happen once, after joining the worker, never inside a render frame.

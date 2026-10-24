@@ -385,3 +385,44 @@ consumer cross-link/install ZIP verification.
 log directory was missing. For v0.6.2, the shutdown receipt screen and
 write-success claim still require console testing. No saved-file path is
 guaranteed before the app probes it on the PS5.
+
+## v0.6.2 hardware validation — PASS, 2026-10-25
+
+The user tested **PPSA99863 v0.6.2 on an actual PS5** and supplied
+three screenshots plus the exact text of the persisted shutdown receipt.
+Both the display and the on-console file writer were confirmed.
+
+| PS5 observation | Result |
+| --- | --- |
+| R2 image-cache stress | **200/200 PASS** |
+| Successful image texture uploads | **1600** |
+| PNG decode / GPU upload errors | **0 / 0** |
+| Current CPU decoded-image cache | 8192 KiB / 8 images |
+| Current GPU texture cache | 8192 KiB / 8 textures |
+| Corrected peak CPU / GPU caches | **8192 / 8192 KiB** |
+| Background worker processed | **1608** jobs |
+| Frames over 33.334 ms during soak | **0** |
+| Soak worst frame | **17.72 ms** |
+| On-screen rolling frame average | ~16.66–16.68 ms |
+| Input focus losses / returns | **2 / 2** |
+| Shutdown screen | **WORKER JOINED: YES** |
+| Queued jobs cancelled at shutdown | 0 |
+| Diagnostic export | **SAVED** |
+| Verified save target | `/data/PS5UI_SDK_Consumer/logs/shutdown.txt` |
+
+The **contents of `shutdown.txt`** supplied by the user confirm
+`worker.joined=1`, `worker.cancelled_queued=0`,
+`worker.processed=1608`, `stress=200/200`,
+`image.uploads=1600`, zero decode/GPU errors and both measured
+cache peaks of 8192 KiB. The seven event breadcrumbs include worker
+startup, stress PASS, two focus interruptions with matching returns and
+the user-requested shutdown.
+
+This closes the previous missing-log and clean-worker-join validation
+blockers **for the v0.6.2 SDK Consumer on the tested PS5**. The `/data`
+write is verified on this console, not guaranteed on all installations
+or sandbox configurations. The user photographed the receipt before
+pressing X; exit-to-shell after that input has not been independently
+confirmed. Focus interception is not equivalent to system sleep/resume.
+Native crash dumps, EGL lost-context reconstruction and comprehensive
+whole-process memory-leak/long-duration validation remain open.

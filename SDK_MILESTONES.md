@@ -252,6 +252,33 @@ Last updated: 2026-10-25. Development branch: `feature/ui-sdk-foundation-2026102
 - [ ] Actual OS suspend/resume, automatic EGL reconstruction and
       native crash dump/symbolication remain outstanding.
 
+## v0.7.0: Controlled GL context restart test (2026-10-25)
+
+- [x] Extra real PS5 v0.6.2 shutdown receipt provided by user:
+      worker.joined=1, 8 jobs processed and 8 GPU uploads with no errors,
+      one focus-interception/restore pair. Stress 0/0 and soak peaks 0/0
+      are expected because this session did not start a stress test.
+- [x] Add reusable SDK `context_restart.hpp/.cpp` with controlled render
+      context shutdown/bring-up sequence and host tests verifying exact
+      teardown and error-path order.
+- [x] Add **L1** experimental EGL/OpenGL restart in the independent
+      PPSA99863 consumer v0.7.0: discard pending image handles, clear GPU
+      textures while current context remains valid, release Renderer,
+      close EGL, reopen EGL, rebuild Renderer and font atlases, request
+      cached images again, and continue rendering.
+- [x] Save restart count/status/duration in the working `/data`
+      shutdown diagnostic report. On a controlled restart failure write
+      one failure receipt and park instead of using invalid GL handles.
+- [ ] Run clang-format, host regression suite, CI and PS5 cross-build
+      against the independent static SDK archive; provide tester artifact
+      only after all pass.
+- [ ] Real PS5 L1 test: verify screen resumes, covers reload and READY,
+      framebuffer remains responsive, `GL restart 1/1 OK` after return,
+      and saved shutdown log reports `gl.restart_success=1`.
+- [ ] **Not** implemented: actual PS5 OS sleep/wake callbacks or automatic
+      recovery from an already lost EGL context; this L1 restart is only
+      a controlled test while the old context is healthy.
+
 ## Production blockers, in priority order
 - [ ] WebP decoding, priority queue and production multi-worker scheduling
       (owned pthread worker, bounded image pipeline and stress harness exist).

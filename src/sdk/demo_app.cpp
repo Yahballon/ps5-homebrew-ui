@@ -41,10 +41,15 @@ constexpr std::uint32_t kWorkerStack = 512u * 1024u;
 class Worker
 {
   public:
-    explicit Worker(hui::sdk::JobQueue &jobs) : jobs_(jobs) {}
+    explicit Worker(hui::sdk::JobQueue &jobs) : jobs_(jobs)
+    {
+    }
     Worker(const Worker &) = delete;
     Worker &operator=(const Worker &) = delete;
-    ~Worker() { stop(); }
+    ~Worker()
+    {
+        stop();
+    }
 
     bool start()
     {
@@ -87,8 +92,8 @@ class Worker
     bool started_ = false;
 };
 
-bool load_font(hui::gfx::Renderer &renderer, const char *path,
-               hui::gfx::Font &font, hui::ui::FontRef &output)
+bool load_font(hui::gfx::Renderer &renderer, const char *path, hui::gfx::Font &font,
+               hui::ui::FontRef &output)
 {
     std::string encoded;
     if (!hui::save::read_file(path, &encoded) || !font.load(encoded))
@@ -98,9 +103,8 @@ bool load_font(hui::gfx::Renderer &renderer, const char *path,
     return output.texture != 0;
 }
 
-void text(hui::gfx::DrawList &draw, const hui::ui::FontRef &face,
-          const std::string &value, float x, float baseline, float size,
-          Color tint = Color::rgb(0xe8f2ff))
+void text(hui::gfx::DrawList &draw, const hui::ui::FontRef &face, const std::string &value, float x,
+          float baseline, float size, Color tint = Color::rgb(0xe8f2ff))
 {
     hui::ui::text(draw, face, value, x, baseline, size, tint);
 }
@@ -150,8 +154,8 @@ void draw_screen(hui::gfx::DrawList &draw, const hui::ui::FontRef &regular,
         draw.circle(960, 423, 66, accent);
         draw.circle(960, 423, 42, Color::rgb(0x10273a));
         text(draw, bold, "SDK INTEGRATION TEST", 635, 565, 52);
-        text(draw, regular, "Screen router  +  native worker  +  PNG decode  +  GPU LRU cache",
-             455, 635, 28, muted);
+        text(draw, regular, "Screen router  +  native worker  +  PNG decode  +  GPU LRU cache", 455,
+             635, 28, muted);
         text(draw, bold, "PRESS X TO OPEN THE LIVE COVER GALLERY", 470, 750, 31, accent);
     }
     else if (page == "gallery")
@@ -194,14 +198,13 @@ void draw_screen(hui::gfx::DrawList &draw, const hui::ui::FontRef &regular,
         draw.rounded_rect({105, 310, 695, 620}, 35, panel);
         const auto texture = images.texture(key);
         if (texture != 0)
-            draw.image(texture, {166, 367, 576, 515}, hui::gfx::kFullUv, Color::rgb(0xffffff),
-                       30);
+            draw.image(texture, {166, 367, 576, 515}, hui::gfx::kFullUv, Color::rgb(0xffffff), 30);
         else
             text(draw, regular, "Waiting for texture", 220, 575, 31, muted);
         draw.rounded_rect({850, 310, 950, 620}, 35, panel);
         text(draw, bold, "IMAGE PIPELINE", 910, 390, 37);
-        text(draw, regular, std::string("State: ") + state_label(images.status(key)),
-             912, 480, 29, accent);
+        text(draw, regular, std::string("State: ") + state_label(images.status(key)), 912, 480, 29,
+             accent);
         text(draw, regular, "Loaded by pthread worker", 912, 548, 27);
         text(draw, regular, "Decoded to CPU RGBA8", 912, 598, 27);
         text(draw, regular, "Uploaded on GL render thread", 912, 648, 27);
@@ -213,8 +216,7 @@ void draw_screen(hui::gfx::DrawList &draw, const hui::ui::FontRef &regular,
         char line[128];
         draw.rounded_rect({160, 287, 1600, 645}, 36, panel);
         text(draw, bold, "FRAME DIAGNOSTICS", 226, 380, 46);
-        std::snprintf(line, sizeof(line), "FRAMES  %llu",
-                      static_cast<unsigned long long>(frames));
+        std::snprintf(line, sizeof(line), "FRAMES  %llu", static_cast<unsigned long long>(frames));
         text(draw, regular, line, 245, 463, 33, accent);
         std::snprintf(line, sizeof(line), "AVG      %.2f ms", report.average_ms);
         text(draw, regular, line, 245, 531, 33);
@@ -231,14 +233,15 @@ void draw_screen(hui::gfx::DrawList &draw, const hui::ui::FontRef &regular,
         std::snprintf(line, sizeof(line), "WORKER                  %s",
                       worker_running ? "RUNNING" : "FAILED");
         text(draw, regular, line, 910, 646, 27);
-        std::snprintf(line, sizeof(line), "FRAMES >16.7ms         %zu / %zu",
-                      report.over_budget, report.samples);
+        std::snprintf(line, sizeof(line), "FRAMES >16.7ms         %zu / %zu", report.over_budget,
+                      report.samples);
         text(draw, regular, line, 910, 730, 27);
     }
 
     draw.rounded_rect({65, 960, 1790, 66}, 20, Color::rgb(0x10283b));
-    text(draw, regular, "X  OPEN / NEXT     O  BACK     D-PAD  SELECT     SQUARE  RELOAD     "
-                        "TRIANGLE  CLEAR GPU     OPTIONS  EXIT",
+    text(draw, regular,
+         "X  OPEN / NEXT     O  BACK     D-PAD  SELECT     SQUARE  RELOAD     "
+         "TRIANGLE  CLEAR GPU     OPTIONS  EXIT",
          110, 1002, 22, muted);
 }
 
@@ -269,10 +272,8 @@ int hui_sdk_demo_main()
     sdk::JobQueue jobs;
     sdk::ImageCache cpu(24u * 1024u * 1024u);
     sdk::TextureCache gpu(
-        24u * 1024u * 1024u,
-        [&renderer](const sdk::Image &image) {
-            return renderer.batch().create_texture(image.width, image.height, image.rgba.data());
-        },
+        24u * 1024u * 1024u, [&renderer](const sdk::Image &image)
+        { return renderer.batch().create_texture(image.width, image.height, image.rgba.data()); },
         [&renderer](std::uint32_t handle) { renderer.batch().destroy_texture(handle); });
     sdk::AsyncImages images(jobs, cpu, gpu, sdk::read_image_file);
     Worker worker(jobs);
@@ -302,9 +303,9 @@ int hui_sdk_demo_main()
     for (;;)
     {
         const auto now = sys::monotonic_us();
-        InputFrame input = tracker.update(std::span<const PadSample>(
-                                              samples, pad.read(std::span<PadSample>(samples))),
-                                          static_cast<std::uint64_t>(now));
+        InputFrame input = tracker.update(
+            std::span<const PadSample>(samples, pad.read(std::span<PadSample>(samples))),
+            static_cast<std::uint64_t>(now));
         const sdk::DemoCommand command = model.update(input);
         if (command == sdk::DemoCommand::request_images && worker_started)
             request_covers();
@@ -333,8 +334,8 @@ int hui_sdk_demo_main()
             sys::log("[HUI SDK DEMO] texture uploaded count=%zu/%zu", gpu.entries(),
                      sdk::DemoModel::kCovers);
 
-        draw_screen(list, regular_ref, bold_ref, model, images, cpu, gpu, timings,
-                    worker_started, frames);
+        draw_screen(list, regular_ref, bold_ref, model, images, cpu, gpu, timings, worker_started,
+                    frames);
         renderer.begin();
         renderer.draw(list);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -362,10 +363,10 @@ int hui_sdk_demo_main()
         if (frames % 300 == 0)
         {
             const auto report = timings.summary();
-            sys::log("[HUI SDK DEMO] frame=%llu avg=%.2f p99=%.2f max=%.2f pending=%zu cpu=%zu gpu=%zu",
-                     static_cast<unsigned long long>(frames), report.average_ms,
-                     report.p99_ms, report.worst_ms, images.pending_count(),
-                     cpu.used_bytes(), gpu.used_bytes());
+            sys::log(
+                "[HUI SDK DEMO] frame=%llu avg=%.2f p99=%.2f max=%.2f pending=%zu cpu=%zu gpu=%zu",
+                static_cast<unsigned long long>(frames), report.average_ms, report.p99_ms,
+                report.worst_ms, images.pending_count(), cpu.used_bytes(), gpu.used_bytes());
         }
     }
 }

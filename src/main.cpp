@@ -422,5 +422,8 @@ int main()
 #else
 // The installer for PPSA99862 is compiled with HUI_SDK_DEMO=1.
 extern int hui_sdk_demo_main();
-int main() { return hui_sdk_demo_main(); }
+int main()
+{
+    return hui_sdk_demo_main();
+}
 #endif

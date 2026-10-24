@@ -87,8 +87,14 @@ class DemoModel
         return DemoCommand::none;
     }
 
-    const Navigator &pages() const { return pages_; }
-    std::size_t selected() const { return selection_; }
+    const Navigator &pages() const
+    {
+        return pages_;
+    }
+    std::size_t selected() const
+    {
+        return selection_;
+    }
     static constexpr std::size_t kCovers = 8;
 
   private:

@@ -43,6 +43,17 @@ class AsyncImages
     using Reader =
         std::function<std::vector<std::uint8_t>(const std::string &, std::size_t max_bytes)>;
 
+    // Counters are owned by the UI thread, so reading them in the frame loop
+    // requires no atomics, locks, filesystem access or worker synchronization.
+    struct Statistics
+    {
+        std::uint64_t requests = 0;
+        std::uint64_t uploaded = 0;
+        std::uint64_t decode_failures = 0;
+        std::uint64_t upload_failures = 0;
+        std::uint64_t cancelled = 0;
+    };
+
     AsyncImages(JobQueue &jobs, ImageCache &cpu, TextureCache &gpu, Reader read,
                 std::size_t max_encoded = 32u * 1024u * 1024u,
                 std::size_t max_pixels = 16u * 1024u * 1024u)
@@ -66,6 +77,7 @@ class AsyncImages
         {
             ready_.push_back({key, std::move(cached)});
             states_[key] = ImageLoadState::loading;
+            ++statistics_.requests;
             return true;
         }
         auto result = std::make_shared<PendingResult>();
@@ -84,6 +96,7 @@ class AsyncImages
             false); // The handle is polled by pump(), not the shared completion deque.
         states_[key] = ImageLoadState::loading;
         pending_.push_back({std::move(key), std::move(handle), std::move(result)});
+        ++statistics_.requests;
         return true;
     }
 
@@ -99,7 +112,12 @@ class AsyncImages
             states_[it->key] = texture ? ImageLoadState::ready : ImageLoadState::failed;
             ++attempts;
             if (texture)
+            {
                 ++uploaded;
+                ++statistics_.uploaded;
+            }
+            else
+                ++statistics_.upload_failures;
             it = ready_.erase(it);
         }
         for (auto it = pending_.begin(); it != pending_.end();)
@@ -112,10 +130,12 @@ class AsyncImages
             if (it->handle.cancelled())
             {
                 states_[it->key] = ImageLoadState::cancelled;
+                ++statistics_.cancelled;
             }
             else if (!it->result->image)
             {
                 states_[it->key] = ImageLoadState::failed;
+                ++statistics_.decode_failures;
             }
             else if (attempts >= max_uploads)
             {
@@ -130,7 +150,12 @@ class AsyncImages
                 cpu_.insert(it->key, std::move(decoded));
                 states_[it->key] = texture ? ImageLoadState::ready : ImageLoadState::failed;
                 if (texture)
+                {
                     ++uploaded;
+                    ++statistics_.uploaded;
+                }
+                else
+                    ++statistics_.upload_failures;
             }
             it = pending_.erase(it);
         }
@@ -158,7 +183,33 @@ class AsyncImages
             pending.handle.cancel();
         for (const auto &pending : ready_)
             states_[pending.key] = ImageLoadState::cancelled;
+        statistics_.cancelled += ready_.size();
         ready_.clear();
+    }
+
+    // Safe to use on the UI thread for a complete cover-gallery reload.
+    // Work callbacks capture their own result buffers (not this object), so
+    // abandoned decodes can finish without overwriting freshly queued images.
+    // Other JobQueue users are unaffected; no global queue cancellation.
+    // CPU/GPU resources remain owned by their caches: clear them separately.
+    void reset()
+    {
+        for (auto &pending : pending_)
+            pending.handle.cancel();
+        statistics_.cancelled += pending_.size() + ready_.size();
+        pending_.clear();
+        ready_.clear();
+        states_.clear();
+    }
+
+    const Statistics &statistics() const
+    {
+        return statistics_;
+    }
+
+    void reset_statistics()
+    {
+        statistics_ = {};
     }
 
     std::size_t pending_count() const
@@ -194,6 +245,7 @@ class AsyncImages
     std::vector<Pending> pending_;
     std::vector<Ready> ready_;
     std::unordered_map<std::string, ImageLoadState> states_;
+    Statistics statistics_;
 };
 
 } // namespace hui::sdk

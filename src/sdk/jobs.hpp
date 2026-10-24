@@ -98,7 +98,7 @@ class JobQueue
         if (job.report_completion)
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            completed_.emplace_back(job.state);
+            completed_.push_back(Handle(job.state));
         }
         return true;
     }
